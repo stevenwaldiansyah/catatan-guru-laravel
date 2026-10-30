@@ -23,10 +23,12 @@ class StudentNoteController extends Controller
             ->visibleTo($request->user())
             ->with(['student', 'schoolClass', 'teacher'])
             ->when($request->filled('q'), function ($query) use ($request) {
-                $like = Search::like($request->string('q')->toString());
-                $query->where(function ($query) use ($like) {
-                    $query->where('description', 'like', $like)
-                        ->orWhereHas('student', fn ($student) => $student->where('name', 'like', $like));
+                $term = $request->string('q')->toString();
+                $query->where(function ($query) use ($term) {
+                    Search::where($query, 'description', $term);
+                    $query->orWhereHas('student', function ($student) use ($term) {
+                        Search::where($student, 'name', $term);
+                    });
                 });
             })
             ->when($request->filled('category'), fn ($query) => $query->where('category', $request->string('category')->toString()))
@@ -109,6 +111,11 @@ class StudentNoteController extends Controller
             'description' => ['required', 'string', 'max:5000'],
             'follow_up' => ['nullable', 'string', 'max:5000'],
         ]);
+
+        if ($note) {
+            $data['student_id'] = $note->student_id;
+            $data['class_id'] = $note->class_id;
+        }
 
         $user = $request->user();
         $student = Student::query()->visibleTo($user)->find($data['student_id']);

@@ -9,6 +9,7 @@ use App\Models\AttendanceSession;
 use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Models\TeachingAssignment;
+use App\Models\TeachingJournal;
 use App\Services\TeachingAuthorizer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -187,20 +188,30 @@ class AttendanceController extends Controller
             abort(redirect()->back()->withInput()->with('error', 'Absensi untuk kelas, mata pelajaran, tanggal, dan sesi ini sudah ada.'));
         }
 
+        $journalId = ($data['journal_id'] ?? null) ?: null;
+        if ($journalId && ! TeachingJournal::query()
+            ->whereKey($journalId)
+            ->where('teacher_id', $assignment->teacher_id)
+            ->where('class_id', $assignment->class_id)
+            ->where('subject_id', $assignment->subject_id)
+            ->exists()) {
+            abort(422, 'Jurnal tidak sesuai dengan guru, kelas, dan mata pelajaran penugasan.');
+        }
+
         $students = $assignment->schoolClass->activeStudents();
         $missing = $students->pluck('id')->map(fn ($id) => (string) $id)->diff(collect(array_keys($data['status']))->map(fn ($id) => (string) $id));
         if ($missing->isNotEmpty()) {
             abort(redirect()->back()->withInput()->with('error', 'Status setiap siswa wajib diisi.'));
         }
 
-        return DB::transaction(function () use ($assignment, $data, $students, $session) {
+        return DB::transaction(function () use ($assignment, $data, $students, $session, $journalId) {
             $payload = [
                 'teacher_id' => $assignment->teacher_id,
                 'class_id' => $assignment->class_id,
                 'subject_id' => $assignment->subject_id,
                 'academic_year_id' => $assignment->academic_year_id,
                 'semester_id' => $assignment->semester_id,
-                'journal_id' => ($data['journal_id'] ?? null) ?: null,
+                'journal_id' => $journalId,
                 'date' => $data['date'],
                 'session_label' => $data['session_label'],
             ];
@@ -215,6 +226,14 @@ class AttendanceController extends Controller
                         'note' => ($data['note'] ?? [])[$student->id] ?? ($data['note'] ?? [])[(string) $student->id] ?? null,
                     ],
                 );
+            }
+
+            $studentIds = $students->pluck('id')->all();
+            $stale = $session->records();
+            if ($studentIds === []) {
+                $stale->delete();
+            } else {
+                $stale->whereNotIn('student_id', $studentIds)->delete();
             }
 
             return $session;

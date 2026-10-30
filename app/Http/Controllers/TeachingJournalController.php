@@ -23,7 +23,7 @@ class TeachingJournalController extends Controller
             ->visibleTo($request->user())
             ->with(['teacher', 'schoolClass', 'subject'])
             ->when($request->filled('q'), function ($query) use ($request) {
-                $query->where('material', 'like', Search::like($request->string('q')->toString()));
+                Search::where($query, 'material', $request->string('q')->toString());
             })
             ->when($request->filled('date_from'), fn ($query) => $query->whereDate('date', '>=', $request->date('date_from')))
             ->when($request->filled('date_to'), fn ($query) => $query->whereDate('date', '<=', $request->date('date_to')))
@@ -132,6 +132,11 @@ class TeachingJournalController extends Controller
             abort(422, 'Data penugasan tidak konsisten.');
         }
 
+        $scheduleId = ($data['schedule_id'] ?? null) ?: null;
+        if ($scheduleId && ! Schedule::query()->whereKey($scheduleId)->where('teaching_assignment_id', $assignment->id)->exists()) {
+            abort(422, 'Jadwal tidak termasuk penugasan yang dipilih.');
+        }
+
         $status = JournalStatus::from($data['status']);
         if ($user->isTeacher() && $journal?->status === JournalStatus::Completed) {
             $status = JournalStatus::Completed;
@@ -143,7 +148,7 @@ class TeachingJournalController extends Controller
             'subject_id' => $assignment->subject_id,
             'academic_year_id' => $assignment->academic_year_id,
             'semester_id' => $assignment->semester_id,
-            'schedule_id' => $data['schedule_id'] ?: null,
+            'schedule_id' => $scheduleId,
             'date' => $data['date'],
             'session_label' => $data['session_label'],
             'material' => $data['material'],

@@ -29,9 +29,11 @@ class StudentController extends Controller
             ->visibleTo($user)
             ->with(['enrollments' => fn ($query) => $query->where('status', EnrollmentStatus::Active)->with('schoolClass')])
             ->when($request->filled('q'), function ($query) use ($request) {
-                $like = Search::like($request->string('q')->toString());
-                $query->where(function ($query) use ($like) {
-                    $query->where('name', 'like', $like)->orWhere('nis', 'like', $like)->orWhere('nisn', 'like', $like);
+                $term = $request->string('q')->toString();
+                $query->where(function ($query) use ($term) {
+                    Search::where($query, 'name', $term);
+                    Search::where($query, 'nis', $term, 'or');
+                    Search::where($query, 'nisn', $term, 'or');
                 });
             })
             ->when($request->filled('class_id'), function ($query) use ($request) {
