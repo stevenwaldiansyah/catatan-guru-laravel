@@ -4,11 +4,35 @@
             @can('update', $student)
                 <a class="btn btn-secondary" href="{{ route('students.edit', $student) }}">Ubah</a>
             @endcan
+            @can('delete', $student)
+                <button type="button" class="btn btn-danger" @click="$dispatch('confirm', { action: @js(route('students.destroy', $student)), title: @js('Hapus data '.$student->name.'?') })">Hapus</button>
+            @endcan
         </x-slot:actions>
     </x-page-header>
     <section class="card">
+        <h2 class="font-headline text-[20px] font-semibold">Data siswa</h2>
+        <dl class="mt-4 grid gap-4 sm:grid-cols-2">
+            <div>
+                <dt class="text-[13px] text-muted">NIS</dt>
+                <dd class="mt-1">{{ $student->nis ?: '-' }}</dd>
+            </div>
+            <div>
+                <dt class="text-[13px] text-muted">NISN</dt>
+                <dd class="mt-1">{{ $student->nisn ?: '-' }}</dd>
+            </div>
+            <div>
+                <dt class="text-[13px] text-muted">Jenis kelamin</dt>
+                <dd class="mt-1">{{ $student->gender === 'L' ? 'Laki-laki' : 'Perempuan' }}</dd>
+            </div>
+            <div>
+                <dt class="text-[13px] text-muted">Status</dt>
+                <dd class="mt-1"><x-badge :tone="$student->status === 'aktif' ? 'success' : 'neutral'">{{ ucfirst($student->status) }}</x-badge></dd>
+            </div>
+        </dl>
+    </section>
+    <section class="card mt-4">
         <h2 class="font-headline text-[20px] font-semibold">Riwayat kelas</h2>
-        <ul class="mt-[12px] divide-y divide-[#F3F4F6]">
+        <ul class="mt-4 divide-y divide-line">
             @foreach ($student->enrollments as $enrollment)
                 <li class="flex min-h-[52px] items-center justify-between gap-[12px] py-[12px]">
                     <span>{{ $enrollment->schoolClass->name }} · {{ $enrollment->academicYear->name }}</span>

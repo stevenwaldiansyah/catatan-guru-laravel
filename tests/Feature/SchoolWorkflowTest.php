@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\JournalStatus;
+use App\Models\Student;
 use App\Models\TeachingJournal;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -88,5 +89,35 @@ class SchoolWorkflowTest extends TestCase
 
         $this->actingAs($school['teacherUser'])->get('/nilai')->assertNotFound();
         $this->actingAs($school['teacherUser'])->get('/laporan/nilai')->assertNotFound();
+    }
+
+    public function test_admin_can_view_and_delete_a_student(): void
+    {
+        $school = $this->buildSchool();
+        $student = $school['student'];
+
+        $this->actingAs($school['admin'])
+            ->get(route('students.index'))
+            ->assertOk()
+            ->assertSee('Lihat')
+            ->assertSee('Hapus')
+            ->assertSee($student->name);
+
+        $this->actingAs($school['admin'])
+            ->get(route('students.show', $student))
+            ->assertOk()
+            ->assertSee('Data siswa')
+            ->assertSee($student->nis);
+
+        $this->actingAs($school['teacherUser'])
+            ->delete(route('students.destroy', $student))
+            ->assertForbidden();
+
+        $this->actingAs($school['admin'])
+            ->delete(route('students.destroy', $student))
+            ->assertRedirect(route('students.index'));
+
+        $this->assertSoftDeleted($student);
+        $this->assertNull(Student::query()->find($student->id));
     }
 }

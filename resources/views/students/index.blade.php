@@ -24,12 +24,15 @@
                 <article class="card">
                     <a class="font-headline text-[20px] font-semibold text-primary" href="{{ route('students.show', $student) }}">{{ $student->name }}</a>
                     <p class="text-[13px] text-muted">{{ $student->nis ?: 'Tanpa NIS' }} · {{ $student->enrollments->first()?->schoolClass?->name ?: 'Belum ada kelas' }}</p>
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        @include('students.partials.actions', ['student' => $student])
+                    </div>
                 </article>
             @endforeach
         </div>
         <div class="hidden md:block table-wrap">
             <table class="data-table">
-                <thead><tr><th>NIS</th><th>NISN</th><th>Nama</th><th>Kelas</th><th>Status</th></tr></thead>
+                <thead><tr><th>NIS</th><th>NISN</th><th>Nama</th><th>Kelas</th><th>Status</th><th>Aksi</th></tr></thead>
                 <tbody>
                     @foreach ($students as $student)
                         <tr>
@@ -38,6 +41,11 @@
                             <td><a class="text-primary" href="{{ route('students.show', $student) }}">{{ $student->name }}</a></td>
                             <td>{{ $student->enrollments->first()?->schoolClass?->name ?: '-' }}</td>
                             <td><x-badge :tone="$student->status === 'aktif' ? 'success' : 'neutral'">{{ ucfirst($student->status) }}</x-badge></td>
+                            <td>
+                                <div class="flex flex-wrap gap-2">
+                                    @include('students.partials.actions', ['student' => $student])
+                                </div>
+                            </td>
                         </tr>
                     @endforeach
                 </tbody>

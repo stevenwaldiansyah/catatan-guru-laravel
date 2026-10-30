@@ -105,7 +105,7 @@ class StudentController extends Controller
         $this->authorize('delete', $student);
         $student->delete();
 
-        return redirect()->route('students.index')->with('success', 'Siswa diarsipkan.');
+        return redirect()->route('students.index')->with('success', 'Data siswa dihapus.');
     }
 
     /**
