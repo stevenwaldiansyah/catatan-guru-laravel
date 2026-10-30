@@ -13,6 +13,7 @@ use App\Models\Student;
 use App\Models\StudentNote;
 use App\Models\TeachingAssignment;
 use App\Models\TeachingJournal;
+use App\Support\Days;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\BuildsSchool;
 use Tests\TestCase;
@@ -331,6 +332,41 @@ class RecordOwnershipTest extends TestCase
             ->assertOk()
             ->assertSee('A\\Budi', false)
             ->assertDontSee('100%_Andi');
+    }
+
+    public function test_schedule_day_must_be_one_of_the_named_weekdays(): void
+    {
+        $school = $this->buildSchool();
+        $day = array_key_first(Days::options());
+
+        $this->actingAs($school['admin'])
+            ->post(route('schedules.store'), [
+                'teaching_assignment_id' => $school['assignment']->id,
+                'day_of_week' => 7,
+                'start_time' => '07:00',
+                'end_time' => '08:00',
+                'room' => null,
+                'label' => null,
+            ])
+            ->assertSessionHasErrors('day_of_week');
+
+        $this->assertDatabaseCount('schedules', 0);
+
+        $this->actingAs($school['admin'])
+            ->post(route('schedules.store'), [
+                'teaching_assignment_id' => $school['assignment']->id,
+                'day_of_week' => $day,
+                'start_time' => '07:00',
+                'end_time' => '08:00',
+                'room' => null,
+                'label' => null,
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('schedules', [
+            'teaching_assignment_id' => $school['assignment']->id,
+            'day_of_week' => $day,
+        ]);
     }
 
     public function test_journal_schedule_must_fall_on_the_same_weekday(): void

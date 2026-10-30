@@ -13,6 +13,7 @@ use App\Services\ScheduleConflictChecker;
 use App\Support\Days;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class ScheduleController extends Controller
@@ -170,7 +171,7 @@ class ScheduleController extends Controller
     {
         $data = $request->validate([
             'teaching_assignment_id' => ['required', 'exists:teaching_assignments,id'],
-            'day_of_week' => ['required', 'integer', 'in:1,2,3,4,5,6,7'],
+            'day_of_week' => ['required', 'integer', Rule::in(array_keys(Days::options()))],
             'start_time' => ['required', 'date_format:H:i'],
             'end_time' => ['required', 'date_format:H:i', 'after:start_time'],
             'room' => ['nullable', 'string', 'max:50'],
