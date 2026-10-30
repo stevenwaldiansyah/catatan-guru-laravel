@@ -19,11 +19,14 @@ class TeacherController extends Controller
         $teachers = Teacher::query()
             ->with('user')
             ->when($request->filled('q'), function ($query) use ($request) {
-                $like = Search::like($request->string('q')->toString());
-                $query->where(function ($query) use ($like) {
-                    $query->where('name', 'like', $like)
-                        ->orWhere('nip', 'like', $like)
-                        ->orWhereHas('user', fn ($user) => $user->where('email', 'like', $like)->orWhere('username', 'like', $like));
+                $term = $request->string('q')->toString();
+                $query->where(function ($query) use ($term) {
+                    Search::where($query, 'name', $term);
+                    Search::where($query, 'nip', $term, 'or');
+                    $query->orWhereHas('user', function ($user) use ($term) {
+                        Search::where($user, 'email', $term);
+                        Search::where($user, 'username', $term, 'or');
+                    });
                 });
             })
             ->orderBy('name')

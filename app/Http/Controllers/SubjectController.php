@@ -15,8 +15,11 @@ class SubjectController extends Controller
     {
         $subjects = Subject::query()
             ->when($request->filled('q'), function ($query) use ($request) {
-                $like = Search::like($request->string('q')->toString());
-                $query->where('name', 'like', $like)->orWhere('code', 'like', $like);
+                $term = $request->string('q')->toString();
+                $query->where(function ($query) use ($term) {
+                    Search::where($query, 'name', $term);
+                    Search::where($query, 'code', $term, 'or');
+                });
             })
             ->orderBy('name')
             ->paginate(10)

@@ -8,10 +8,12 @@ use App\Models\Semester;
 use App\Models\Subject;
 use App\Models\Teacher;
 use App\Models\TeachingAssignment;
+use App\Models\TeachingJournal;
 use App\Services\ScheduleConflictChecker;
 use App\Support\Days;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class ScheduleController extends Controller
@@ -134,7 +136,7 @@ class ScheduleController extends Controller
             return back()->with('error', 'Hapus jadwal pada penugasan ini terlebih dahulu.');
         }
 
-        $used = \App\Models\TeachingJournal::query()
+        $used = TeachingJournal::query()
             ->where('teacher_id', $assignment->teacher_id)
             ->where('class_id', $assignment->class_id)
             ->where('subject_id', $assignment->subject_id)
@@ -169,7 +171,7 @@ class ScheduleController extends Controller
     {
         $data = $request->validate([
             'teaching_assignment_id' => ['required', 'exists:teaching_assignments,id'],
-            'day_of_week' => ['required', 'integer', 'between:1,6'],
+            'day_of_week' => ['required', 'integer', Rule::in(array_keys(Days::options()))],
             'start_time' => ['required', 'date_format:H:i'],
             'end_time' => ['required', 'date_format:H:i', 'after:start_time'],
             'room' => ['nullable', 'string', 'max:50'],

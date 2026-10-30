@@ -23,10 +23,12 @@ class StudentNoteController extends Controller
             ->visibleTo($request->user())
             ->with(['student', 'schoolClass', 'teacher'])
             ->when($request->filled('q'), function ($query) use ($request) {
-                $like = Search::like($request->string('q')->toString());
-                $query->where(function ($query) use ($like) {
-                    $query->where('description', 'like', $like)
-                        ->orWhereHas('student', fn ($student) => $student->where('name', 'like', $like));
+                $term = $request->string('q')->toString();
+                $query->where(function ($query) use ($term) {
+                    Search::where($query, 'description', $term);
+                    $query->orWhereHas('student', function ($student) use ($term) {
+                        Search::where($student, 'name', $term);
+                    });
                 });
             })
             ->when($request->filled('category'), fn ($query) => $query->where('category', $request->string('category')->toString()))
@@ -72,6 +74,8 @@ class StudentNoteController extends Controller
     {
         $this->authorize('update', $note);
 
+        $note->load(['student', 'schoolClass']);
+
         return view('notes.form', [
             'note' => $note,
             'students' => Student::query()->visibleTo($request->user())->orderBy('name')->get(),
@@ -101,14 +105,31 @@ class StudentNoteController extends Controller
      */
     private function payload(Request $request, ?StudentNote $note = null): array
     {
-        $data = $request->validate([
-            'student_id' => ['required', 'exists:students,id'],
-            'class_id' => ['required', 'exists:classes,id'],
+        $rules = [
             'date' => ['required', 'date'],
             'category' => ['required', Rule::in(array_keys(NoteCategories::options()))],
             'description' => ['required', 'string', 'max:5000'],
             'follow_up' => ['nullable', 'string', 'max:5000'],
-        ]);
+        ];
+
+        if ($note) {
+            $rules['student_id'] = ['prohibited'];
+            $rules['class_id'] = ['prohibited'];
+        } else {
+            $rules['student_id'] = ['required', 'exists:students,id'];
+            $rules['class_id'] = ['required', 'exists:classes,id'];
+        }
+
+        $data = $request->validate($rules);
+
+        if ($note) {
+            return [
+                'date' => $data['date'],
+                'category' => $data['category'],
+                'description' => $data['description'],
+                'follow_up' => $data['follow_up'] ?? null,
+            ];
+        }
 
         $user = $request->user();
         $student = Student::query()->visibleTo($user)->find($data['student_id']);
@@ -123,13 +144,13 @@ class StudentNoteController extends Controller
             ->exists();
         abort_unless($enrolled, 422, 'Siswa tidak terdaftar aktif di kelas tersebut.');
 
-        $teacherId = $note?->teacher_id ?? $user->teacher?->id;
+        $teacherId = $user->teacher?->id;
         abort_unless($teacherId, 403, 'Catatan perkembangan dicatat melalui akun guru.');
 
         return [
             'teacher_id' => $teacherId,
-            'student_id' => $note?->student_id ?? $student->id,
-            'class_id' => $note?->class_id ?? $data['class_id'],
+            'student_id' => $student->id,
+            'class_id' => $data['class_id'],
             'date' => $data['date'],
             'category' => $data['category'],
             'description' => $data['description'],
