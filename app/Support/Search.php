@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Search
 {
-    public static function like(string $value): string
+    private static function like(string $value): string
     {
         $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], trim($value));
 
@@ -24,7 +24,7 @@ class Search
     public static function where(Builder $query, string $column, string $value, string $boolean = 'and'): Builder
     {
         return $query->whereRaw(
-            $query->getGrammar()->wrap($column).' like ? escape ?',
+            $query->getGrammar()->wrap($query->qualifyColumn($column)).' like ? escape ?',
             [self::like($value), '\\'],
             $boolean,
         );

@@ -194,17 +194,24 @@ class AttendanceController extends Controller
             ->where('teacher_id', $assignment->teacher_id)
             ->where('class_id', $assignment->class_id)
             ->where('subject_id', $assignment->subject_id)
+            ->where('academic_year_id', $assignment->academic_year_id)
+            ->where('semester_id', $assignment->semester_id)
+            ->whereDate('date', $data['date'])
             ->exists()) {
-            abort(422, 'Jurnal tidak sesuai dengan guru, kelas, dan mata pelajaran penugasan.');
+            abort(422, 'Jurnal tidak sesuai dengan penugasan atau tanggal absensi.');
         }
 
-        $students = $assignment->schoolClass->activeStudents();
-        $missing = $students->pluck('id')->map(fn ($id) => (string) $id)->diff(collect(array_keys($data['status']))->map(fn ($id) => (string) $id));
+        $rosterChanged = $session !== null && $this->assignmentChanged($session, $assignment);
+        $studentIds = $session !== null && ! $rosterChanged
+            ? $session->records()->pluck('student_id')->map(fn ($id) => (int) $id)->all()
+            : $assignment->schoolClass->activeStudents()->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+        $missing = collect($studentIds)->map(fn ($id) => (string) $id)->diff(collect(array_keys($data['status']))->map(fn ($id) => (string) $id));
         if ($missing->isNotEmpty()) {
             abort(redirect()->back()->withInput()->with('error', 'Status setiap siswa wajib diisi.'));
         }
 
-        return DB::transaction(function () use ($assignment, $data, $students, $session, $journalId) {
+        return DB::transaction(function () use ($assignment, $data, $studentIds, $session, $journalId, $rosterChanged) {
             $payload = [
                 'teacher_id' => $assignment->teacher_id,
                 'class_id' => $assignment->class_id,
@@ -218,26 +225,36 @@ class AttendanceController extends Controller
 
             $session = $session ? tap($session)->update($payload) : AttendanceSession::query()->create($payload);
 
-            foreach ($students as $student) {
+            foreach ($studentIds as $studentId) {
                 AttendanceRecord::query()->updateOrCreate(
-                    ['attendance_session_id' => $session->id, 'student_id' => $student->id],
+                    ['attendance_session_id' => $session->id, 'student_id' => $studentId],
                     [
-                        'status' => $data['status'][$student->id] ?? $data['status'][(string) $student->id],
-                        'note' => ($data['note'] ?? [])[$student->id] ?? ($data['note'] ?? [])[(string) $student->id] ?? null,
+                        'status' => $data['status'][$studentId] ?? $data['status'][(string) $studentId],
+                        'note' => ($data['note'] ?? [])[$studentId] ?? ($data['note'] ?? [])[(string) $studentId] ?? null,
                     ],
                 );
             }
 
-            $studentIds = $students->pluck('id')->all();
-            $stale = $session->records();
-            if ($studentIds === []) {
-                $stale->delete();
-            } else {
-                $stale->whereNotIn('student_id', $studentIds)->delete();
+            if ($rosterChanged) {
+                $stale = $session->records();
+                if ($studentIds === []) {
+                    $stale->delete();
+                } else {
+                    $stale->whereNotIn('student_id', $studentIds)->delete();
+                }
             }
 
             return $session;
         });
+    }
+
+    private function assignmentChanged(AttendanceSession $session, TeachingAssignment $assignment): bool
+    {
+        return (int) $session->class_id !== (int) $assignment->class_id
+            || (int) $session->subject_id !== (int) $assignment->subject_id
+            || (int) $session->teacher_id !== (int) $assignment->teacher_id
+            || (int) $session->semester_id !== (int) $assignment->semester_id
+            || (int) $session->academic_year_id !== (int) $assignment->academic_year_id;
     }
 
     private function selectedAssignment(Request $request): ?TeachingAssignment

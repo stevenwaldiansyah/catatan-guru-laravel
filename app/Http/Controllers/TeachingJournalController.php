@@ -11,6 +11,7 @@ use App\Services\TeachingAuthorizer;
 use App\Support\Search;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\View\View;
 
 class TeachingJournalController extends Controller
@@ -133,8 +134,14 @@ class TeachingJournalController extends Controller
         }
 
         $scheduleId = ($data['schedule_id'] ?? null) ?: null;
-        if ($scheduleId && ! Schedule::query()->whereKey($scheduleId)->where('teaching_assignment_id', $assignment->id)->exists()) {
-            abort(422, 'Jadwal tidak termasuk penugasan yang dipilih.');
+        if ($scheduleId) {
+            $schedule = Schedule::query()->whereKey($scheduleId)->where('teaching_assignment_id', $assignment->id)->first();
+            if (! $schedule) {
+                abort(422, 'Jadwal tidak termasuk penugasan yang dipilih.');
+            }
+            if ((int) $schedule->day_of_week !== Carbon::parse($data['date'])->dayOfWeekIso) {
+                abort(422, 'Tanggal jurnal tidak sesuai hari pada jadwal.');
+            }
         }
 
         $status = JournalStatus::from($data['status']);
