@@ -251,6 +251,53 @@ class RecordOwnershipTest extends TestCase
         $this->assertDatabaseCount('attendance_records', 1);
     }
 
+    public function test_updating_an_empty_attendance_session_adds_the_active_roster(): void
+    {
+        $school = $this->buildSchool();
+        $session = AttendanceSession::query()->create([
+            'teacher_id' => $school['teacher']->id,
+            'class_id' => $school['class']->id,
+            'subject_id' => $school['subject']->id,
+            'academic_year_id' => $school['year']->id,
+            'semester_id' => $school['semester']->id,
+            'date' => '2026-10-29',
+            'session_label' => 'Jam 1',
+        ]);
+
+        $this->actingAs($school['teacherUser'])
+            ->put(route('attendance.update', $session), [
+                'assignment_id' => $school['assignment']->id,
+                'date' => '2026-10-29',
+                'session_label' => 'Jam 1',
+                'status' => [$school['student']->id => 'hadir'],
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('attendance_records', [
+            'attendance_session_id' => $session->id,
+            'student_id' => $school['student']->id,
+            'status' => 'hadir',
+        ]);
+    }
+
+    public function test_notes_render_for_a_soft_deleted_student(): void
+    {
+        $school = $this->buildSchool();
+        $note = StudentNote::query()->create([
+            'teacher_id' => $school['teacher']->id,
+            'student_id' => $school['student']->id,
+            'class_id' => $school['class']->id,
+            'date' => '2026-10-29',
+            'category' => 'akademik',
+            'description' => 'Catatan siswa terhapus',
+        ]);
+        $school['student']->delete();
+
+        $this->actingAs($school['teacherUser'])->get(route('notes.index'))->assertOk()->assertSee($school['student']->name);
+        $this->actingAs($school['teacherUser'])->get(route('notes.show', $note))->assertOk()->assertSee($school['student']->name);
+        $this->actingAs($school['teacherUser'])->get(route('notes.edit', $note))->assertOk()->assertSee($school['student']->name);
+    }
+
     public function test_student_search_treats_like_wildcards_as_literals(): void
     {
         $school = $this->buildSchool();

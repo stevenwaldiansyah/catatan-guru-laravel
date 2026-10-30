@@ -204,7 +204,11 @@ class AttendanceController extends Controller
         $rosterChanged = $session !== null && $this->assignmentChanged($session, $assignment);
         $studentIds = $session !== null && ! $rosterChanged
             ? $session->records()->pluck('student_id')->map(fn ($id) => (int) $id)->all()
-            : $assignment->schoolClass->activeStudents()->pluck('id')->map(fn ($id) => (int) $id)->all();
+            : [];
+
+        if ($studentIds === []) {
+            $studentIds = $assignment->schoolClass->activeStudents()->pluck('id')->map(fn ($id) => (int) $id)->all();
+        }
 
         $missing = collect($studentIds)->map(fn ($id) => (string) $id)->diff(collect(array_keys($data['status']))->map(fn ($id) => (string) $id));
         if ($missing->isNotEmpty()) {
