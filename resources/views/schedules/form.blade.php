@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-page-header :title="$schedule->exists ? 'Ubah jadwal' : 'Tambah jadwal'" />
-    <form method="POST" action="{{ $schedule->exists ? route('schedules.update', $schedule) : route('schedules.store') }}" class="card grid max-w-[720px] gap-[18px] bg-white">
+    <form method="POST" action="{{ $schedule->exists ? route('schedules.update', $schedule) : route('schedules.store') }}" class="card grid max-w-[720px] gap-[18px]">
         @csrf
         @if ($schedule->exists) @method('PUT') @endif
         <x-select label="Penugasan" name="teaching_assignment_id" required>

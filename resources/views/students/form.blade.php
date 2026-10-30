@@ -1,7 +1,7 @@
 <x-app-layout>
     @php $currentClass = $student->exists ? $student->enrollments->firstWhere('status', \App\Enums\EnrollmentStatus::Active)?->class_id : null; @endphp
     <x-page-header :title="$student->exists ? 'Ubah siswa' : 'Tambah siswa'" description="Memindahkan kelas pada tahun ajaran yang sama menyimpan riwayat pindah." />
-    <form method="POST" action="{{ $student->exists ? route('students.update', $student) : route('students.store') }}" class="card grid gap-[18px] bg-white md:grid-cols-2">
+    <form method="POST" action="{{ $student->exists ? route('students.update', $student) : route('students.store') }}" class="card grid gap-[18px] md:grid-cols-2">
         @csrf
         @if ($student->exists) @method('PUT') @endif
         <x-input label="Nama" name="name" :value="$student->name" required />

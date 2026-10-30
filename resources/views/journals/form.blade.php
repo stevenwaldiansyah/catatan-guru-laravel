@@ -6,7 +6,7 @@
             $selectedAssignment = $assignments->first(fn ($item) => $item->teacher_id === $journal->teacher_id && $item->class_id === $journal->class_id && $item->subject_id === $journal->subject_id && $item->semester_id === $journal->semester_id)?->id;
         }
     @endphp
-    <form method="POST" action="{{ $journal->exists ? route('journals.update', $journal) : route('journals.store') }}" class="card grid gap-[18px] bg-white">
+    <form method="POST" action="{{ $journal->exists ? route('journals.update', $journal) : route('journals.store') }}" class="card grid gap-[18px]">
         @csrf
         @if ($journal->exists) @method('PUT') @endif
         <x-select label="Penugasan" name="assignment_id" required>

@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-page-header :title="$subject->exists ? 'Ubah mapel' : 'Tambah mapel'" />
-    <form method="POST" action="{{ $subject->exists ? route('subjects.update', $subject) : route('subjects.store') }}" class="card grid max-w-[720px] gap-[18px] bg-white">
+    <form method="POST" action="{{ $subject->exists ? route('subjects.update', $subject) : route('subjects.store') }}" class="card grid max-w-[720px] gap-[18px]">
         @csrf
         @if ($subject->exists) @method('PUT') @endif
         <x-input label="Kode" name="code" :value="$subject->code" required />

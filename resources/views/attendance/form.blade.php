@@ -10,7 +10,7 @@
         <div class="self-end"><button class="btn btn-secondary">Tampilkan siswa</button></div>
     </form>
     @if ($assignment)
-        <form method="POST" action="{{ route('attendance.store') }}" class="card space-y-[18px] bg-white" x-data="{ mark(value) { document.querySelectorAll('[data-attendance]').forEach((el) => { el.value = value }) } }">
+        <form method="POST" action="{{ route('attendance.store') }}" class="card space-y-[18px]" x-data="{ mark(value) { document.querySelectorAll('[data-attendance]').forEach((el) => { el.value = value }) } }">
             @csrf
             <input type="hidden" name="assignment_id" value="{{ $assignment->id }}">
             <div class="grid gap-[12px] md:grid-cols-2">

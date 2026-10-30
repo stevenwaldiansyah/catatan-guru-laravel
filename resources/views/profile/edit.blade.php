@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-page-header title="Profil" description="Perbarui identitas akun dan kata sandi Anda." />
     <div class="grid gap-[18px] lg:grid-cols-2">
-        <form method="POST" action="{{ route('profile.update') }}" class="card space-y-[18px] bg-white">
+        <form method="POST" action="{{ route('profile.update') }}" class="card space-y-[18px]">
             @csrf
             @method('PUT')
             <h2 class="font-headline text-[20px] font-semibold">Data akun</h2>
@@ -13,7 +13,7 @@
             @endif
             <button class="btn btn-primary" data-submit>Simpan profil</button>
         </form>
-        <form method="POST" action="{{ route('profile.password') }}" class="card space-y-[18px] bg-white">
+        <form method="POST" action="{{ route('profile.password') }}" class="card space-y-[18px]">
             @csrf
             @method('PUT')
             <h2 class="font-headline text-[20px] font-semibold">Kata sandi</h2>

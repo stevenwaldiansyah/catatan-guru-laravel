@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-page-header :title="$note->exists ? 'Ubah catatan' : 'Tambah catatan'" />
-    <form method="POST" action="{{ $note->exists ? route('notes.update', $note) : route('notes.store') }}" class="card grid gap-[18px] bg-white">
+    <form method="POST" action="{{ $note->exists ? route('notes.update', $note) : route('notes.store') }}" class="card grid gap-[18px]">
         @csrf
         @if ($note->exists) @method('PUT') @endif
         <x-select label="Siswa" name="student_id" required>

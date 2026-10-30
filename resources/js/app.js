@@ -35,6 +35,10 @@ import {
 window.Alpine = Alpine;
 window.Chart = Chart;
 
+Chart.defaults.color = '#98989D';
+Chart.defaults.borderColor = '#2C2C2E';
+Chart.defaults.font.family = "Inter, 'Segoe UI', sans-serif";
+
 Alpine.start();
 
 createIcons({

@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-page-header :title="$class->exists ? 'Ubah kelas' : 'Tambah kelas'" />
-    <form method="POST" action="{{ $class->exists ? route('classes.update', $class) : route('classes.store') }}" class="card grid gap-[18px] bg-white md:grid-cols-2">
+    <form method="POST" action="{{ $class->exists ? route('classes.update', $class) : route('classes.store') }}" class="card grid gap-[18px] md:grid-cols-2">
         @csrf
         @if ($class->exists) @method('PUT') @endif
         <x-select label="Tahun ajaran" name="academic_year_id" required>

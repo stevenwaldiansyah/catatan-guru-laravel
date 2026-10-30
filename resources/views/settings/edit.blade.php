@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-page-header title="Pengaturan" description="Identitas sekolah, periode aktif, dan aturan jadwal." />
-    <form method="POST" action="{{ route('settings.update') }}" class="card grid gap-[18px] bg-white md:grid-cols-2">
+    <form method="POST" action="{{ route('settings.update') }}" class="card grid gap-[18px] md:grid-cols-2">
         @csrf
         @method('PUT')
         <x-input label="Nama sekolah" name="school_name" :value="$settings->school_name" required />

@@ -1,7 +1,7 @@
 <x-guest-layout>
-    <div class="card bg-white shadow-medium">
+    <div class="card">
         <p class="text-[12px] font-semibold uppercase tracking-wide text-primary">EduJurnal</p>
-        <h1 class="mt-[6px] font-headline text-[32px] font-bold leading-10">Masuk</h1>
+        <h1 class="mt-2 font-headline text-2xl font-semibold leading-8">Masuk</h1>
         <p class="mt-[6px] text-[15px] text-muted">Sistem administrasi kegiatan belajar mengajar.</p>
         <form method="POST" action="{{ route('login.store') }}" class="mt-[24px] space-y-[18px]">
             @csrf

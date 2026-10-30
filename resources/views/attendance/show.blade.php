@@ -13,7 +13,7 @@
         <li class="card">Alpa: {{ $summary['alpa'] }}</li>
     </ul>
     @can('update', $session)
-        <form method="POST" action="{{ route('attendance.update', $session) }}" class="card space-y-[12px] bg-white">
+        <form method="POST" action="{{ route('attendance.update', $session) }}" class="card space-y-[12px]">
             @csrf
             @method('PUT')
             <input type="hidden" name="assignment_id" value="{{ \App\Models\TeachingAssignment::query()->where('teacher_id', $session->teacher_id)->where('class_id', $session->class_id)->where('subject_id', $session->subject_id)->where('semester_id', $session->semester_id)->value('id') }}">

@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-page-header :title="$year->exists ? 'Ubah tahun ajaran' : 'Tambah tahun ajaran'" />
-    <form method="POST" action="{{ $year->exists ? route('academic-years.update', $year) : route('academic-years.store') }}" class="card grid max-w-[720px] gap-[18px] bg-white">
+    <form method="POST" action="{{ $year->exists ? route('academic-years.update', $year) : route('academic-years.store') }}" class="card grid max-w-[720px] gap-[18px]">
         @csrf
         @if ($year->exists) @method('PUT') @endif
         <x-input label="Nama" name="name" :value="$year->name" placeholder="2026/2027" required />

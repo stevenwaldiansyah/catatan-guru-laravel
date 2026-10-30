@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-page-header :title="$teacher->exists ? 'Ubah guru' : 'Tambah guru'" description="Akun dan profil guru disimpan bersama." />
-    <form method="POST" action="{{ $teacher->exists ? route('teachers.update', $teacher) : route('teachers.store') }}" class="card grid gap-[18px] bg-white md:grid-cols-2">
+    <form method="POST" action="{{ $teacher->exists ? route('teachers.update', $teacher) : route('teachers.store') }}" class="card grid gap-[18px] md:grid-cols-2">
         @csrf
         @if ($teacher->exists) @method('PUT') @endif
         <x-input label="Nama" name="name" :value="$teacher->name" required />
