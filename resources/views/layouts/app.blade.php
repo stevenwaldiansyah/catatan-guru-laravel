@@ -27,10 +27,13 @@
                 <i data-lucide="menu"></i>
             </button>
             <p class="truncate font-headline text-[20px] font-semibold tracking-tight">{{ $schoolName }}</p>
-            <a href="{{ route('profile.edit') }}" class="btn btn-ghost" aria-label="Profil">
-                <i data-lucide="circle-user"></i>
-                <span class="hidden sm:inline">{{ auth()->user()->name }}</span>
-            </a>
+            <div class="flex items-center gap-1">
+                @include('partials.theme-toggle')
+                <a href="{{ route('profile.edit') }}" class="btn btn-ghost" aria-label="Profil">
+                    <i data-lucide="circle-user"></i>
+                    <span class="hidden sm:inline">{{ auth()->user()->name }}</span>
+                </a>
+            </div>
         </header>
 
         <main id="isi" class="mx-auto w-full min-w-0 max-w-[1360px] px-4 py-6 pb-24 md:px-6 md:pb-8 lg:px-8">

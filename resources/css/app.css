@@ -5,32 +5,127 @@
 @source '../**/*.blade.php';
 @source '../**/*.js';
 
-@theme {
+@theme inline {
     --font-sans: 'Inter', 'Segoe UI', sans-serif;
     --font-headline: 'Inter', 'Segoe UI', sans-serif;
     --font-mono: 'JetBrains Mono', ui-monospace, monospace;
-    --color-canvas: #121212;
-    --color-card: #1e1e1e;
-    --color-hover: #252525;
-    --color-primary: #00e5ff;
-    --color-primary-press: #00c4db;
-    --color-mint: #32d74b;
-    --color-surface: #1e1e1e;
-    --color-ink: #ffffff;
-    --color-muted: #98989d;
-    --color-line: #2c2c2e;
-    --color-danger: #ff453a;
-    --color-danger-press: #e03b32;
-    --shadow-subtle: 0 0 0 1px #2c2c2e;
-    --shadow-medium: 0 8px 24px rgb(0 0 0 / 0.35);
-    --shadow-large: 0 16px 40px rgb(0 0 0 / 0.45);
+    --color-canvas: var(--canvas);
+    --color-card: var(--card);
+    --color-hover: var(--hover);
+    --color-primary: var(--primary);
+    --color-primary-press: var(--primary-press);
+    --color-mint: var(--mint);
+    --color-surface: var(--card);
+    --color-ink: var(--ink);
+    --color-muted: var(--muted);
+    --color-line: var(--line);
+    --color-danger: var(--danger);
+    --color-danger-press: var(--danger-press);
+    --shadow-subtle: 0 0 0 1px var(--line);
+    --shadow-medium: 0 8px 24px rgb(0 0 0 / 0.12);
+    --shadow-large: 0 16px 40px rgb(0 0 0 / 0.18);
+}
+
+html[data-theme="dark"] {
+    --canvas: #121212;
+    --card: #1e1e1e;
+    --hover: #252525;
+    --primary: #00e5ff;
+    --primary-press: #00c4db;
+    --on-primary: #121212;
+    --mint: #32d74b;
+    --ink: #ffffff;
+    --muted: #98989d;
+    --line: #2c2c2e;
+    --danger: #ff453a;
+    --danger-press: #e03b32;
+    --field: #121212;
+    --field-border-hover: #3a3a3c;
+    --placeholder: #6e6e73;
+    --secondary: #2c2c2e;
+    --secondary-hover: #3a3a3c;
+    --on-secondary: #ffffff;
+    --hover-ink: #ffffff;
+    --invalid: #3a1c1c;
+    --focus: rgb(0 229 255 / 0.16);
+    --nav-active-bg: rgb(0 229 255 / 0.1);
+    --badge-info-bg: rgb(0 229 255 / 0.12);
+    --badge-info-ink: #00e5ff;
+    --badge-success-bg: rgb(50 215 75 / 0.14);
+    --badge-success-ink: #32d74b;
+    --badge-warning-bg: rgb(255 214 10 / 0.14);
+    --badge-warning-ink: #ffd60a;
+    --badge-danger-bg: rgb(255 69 58 / 0.16);
+    --badge-danger-ink: #ff453a;
+    --badge-neutral-bg: #2c2c2e;
+    --badge-neutral-ink: #d1d1d6;
+    --alert-success-bg: rgb(50 215 75 / 0.12);
+    --alert-success-ink: #32d74b;
+    --alert-error-bg: #3a1c1c;
+    --alert-error-ink: #ff453a;
+    --alert-info-bg: rgb(0 229 255 / 0.1);
+    --alert-info-ink: #00e5ff;
+    --selection: rgb(0 229 255 / 0.28);
+    --selection-ink: #ffffff;
+    --page: #1e1e1e;
+    --page-ink: #ffffff;
+    --page-current: #00e5ff;
+    --page-current-ink: #121212;
+    color-scheme: dark;
+}
+
+html[data-theme="light"] {
+    --canvas: #f4f4f5;
+    --card: #ffffff;
+    --hover: #ececee;
+    --primary: #007f99;
+    --primary-press: #006680;
+    --on-primary: #ffffff;
+    --mint: #157a32;
+    --ink: #121212;
+    --muted: #5c5c63;
+    --line: #e4e4e7;
+    --danger: #d92d20;
+    --danger-press: #b42318;
+    --field: #ffffff;
+    --field-border-hover: #c7c7cc;
+    --placeholder: #8e8e93;
+    --secondary: #ececee;
+    --secondary-hover: #e0e0e3;
+    --on-secondary: #121212;
+    --hover-ink: #121212;
+    --invalid: #fff1f0;
+    --focus: rgb(0 127 153 / 0.18);
+    --nav-active-bg: rgb(0 127 153 / 0.1);
+    --badge-info-bg: #e7f6fa;
+    --badge-info-ink: #006680;
+    --badge-success-bg: #e8f7ec;
+    --badge-success-ink: #146c2e;
+    --badge-warning-bg: #fff6db;
+    --badge-warning-ink: #8a5a00;
+    --badge-danger-bg: #fff1f0;
+    --badge-danger-ink: #b42318;
+    --badge-neutral-bg: #ececee;
+    --badge-neutral-ink: #3a3a3c;
+    --alert-success-bg: #e8f7ec;
+    --alert-success-ink: #146c2e;
+    --alert-error-bg: #fff1f0;
+    --alert-error-ink: #b42318;
+    --alert-info-bg: #e7f6fa;
+    --alert-info-ink: #006680;
+    --selection: rgb(0 127 153 / 0.2);
+    --selection-ink: #121212;
+    --page: #ffffff;
+    --page-ink: #121212;
+    --page-current: #007f99;
+    --page-current-ink: #ffffff;
+    color-scheme: light;
 }
 
 @layer base {
     html {
-        background: var(--color-canvas);
-        color: var(--color-ink);
-        color-scheme: dark;
+        background: var(--canvas, #121212);
+        color: var(--ink, #ffffff);
         font-family: var(--font-sans);
         font-size: 14px;
         line-height: 22px;
@@ -44,20 +139,25 @@
     body {
         min-height: 100vh;
         overflow-x: hidden;
-        background: var(--color-canvas);
+        background: var(--canvas, #121212);
     }
 
     :focus-visible {
-        outline: 2px solid var(--color-primary);
+        outline: 2px solid var(--primary);
         outline-offset: 2px;
     }
 
     ::selection {
-        background: rgb(0 229 255 / 0.28);
-        color: #fff;
+        background: var(--selection);
+        color: var(--selection-ink);
     }
 
     [x-cloak] {
+        display: none !important;
+    }
+
+    html[data-theme="dark"] [data-theme-icon="moon"],
+    html[data-theme="light"] [data-theme-icon="sun"] {
         display: none !important;
     }
 
@@ -81,7 +181,7 @@
         min-height: 44px;
         min-width: 44px;
         padding: 10px 16px;
-        transition: background-color 200ms ease, transform 200ms ease;
+        transition: background-color 200ms ease, color 200ms ease, transform 200ms ease;
     }
 
     .btn:active {
@@ -94,44 +194,44 @@
     }
 
     .btn-primary {
-        background: var(--color-primary);
-        color: #121212;
+        background: var(--primary);
+        color: var(--on-primary);
     }
 
     .btn-primary:hover, .btn-primary:active {
-        background: var(--color-primary-press);
+        background: var(--primary-press);
     }
 
     .btn-secondary {
-        background: #2c2c2e;
-        color: #fff;
+        background: var(--secondary);
+        color: var(--on-secondary);
     }
 
     .btn-secondary:hover, .btn-secondary:active {
-        background: #3a3a3c;
+        background: var(--secondary-hover);
     }
 
     .btn-ghost {
         background: transparent;
-        color: var(--color-muted);
+        color: var(--muted);
     }
 
     .btn-ghost:hover, .btn-ghost:active {
-        background: var(--color-hover);
-        color: #fff;
+        background: var(--hover);
+        color: var(--hover-ink);
     }
 
     .btn-danger {
-        background: var(--color-danger);
+        background: var(--danger);
         color: #fff;
     }
 
     .btn-danger:hover, .btn-danger:active {
-        background: var(--color-danger-press);
+        background: var(--danger-press);
     }
 
     .label {
-        color: var(--color-muted);
+        color: var(--muted);
         display: block;
         font-size: 13px;
         font-weight: 500;
@@ -140,10 +240,10 @@
     }
 
     .field {
-        background: #121212;
-        border: 1px solid var(--color-line);
+        background: var(--field);
+        border: 1px solid var(--line);
         border-radius: 12px;
-        color: var(--color-ink);
+        color: var(--ink);
         font-size: 14px;
         min-height: 44px;
         padding: 10px 14px;
@@ -151,27 +251,27 @@
     }
 
     .field::placeholder {
-        color: #6e6e73;
+        color: var(--placeholder);
     }
 
     .field:hover {
-        border-color: #3a3a3c;
+        border-color: var(--field-border-hover);
     }
 
     .field:focus {
-        background: #121212;
-        border-color: var(--color-primary);
-        box-shadow: 0 0 0 3px rgb(0 229 255 / 0.16);
+        background: var(--field);
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px var(--focus);
         outline: none;
     }
 
     .field-invalid {
-        background: #3a1c1c;
-        border-color: var(--color-danger);
+        background: var(--invalid);
+        border-color: var(--danger);
     }
 
     .field-error {
-        color: var(--color-danger);
+        color: var(--danger);
         display: block;
         font-size: 12px;
         line-height: 18px;
@@ -179,8 +279,8 @@
     }
 
     .card {
-        background: var(--color-card);
-        border: 1px solid var(--color-line);
+        background: var(--card);
+        border: 1px solid var(--line);
         border-radius: 16px;
         max-width: 100%;
         min-width: 0;
@@ -206,15 +306,15 @@
         padding: 4px 12px;
     }
 
-    .badge-info { background: rgb(0 229 255 / 0.12); color: #00e5ff; }
-    .badge-success { background: rgb(50 215 75 / 0.14); color: #32d74b; }
-    .badge-warning { background: rgb(255 214 10 / 0.14); color: #ffd60a; }
-    .badge-danger { background: rgb(255 69 58 / 0.16); color: #ff453a; }
-    .badge-neutral { background: #2c2c2e; color: #d1d1d6; }
+    .badge-info { background: var(--badge-info-bg); color: var(--badge-info-ink); }
+    .badge-success { background: var(--badge-success-bg); color: var(--badge-success-ink); }
+    .badge-warning { background: var(--badge-warning-bg); color: var(--badge-warning-ink); }
+    .badge-danger { background: var(--badge-danger-bg); color: var(--badge-danger-ink); }
+    .badge-neutral { background: var(--badge-neutral-bg); color: var(--badge-neutral-ink); }
 
     .table-wrap {
-        background: var(--color-card);
-        border: 1px solid var(--color-line);
+        background: var(--card);
+        border: 1px solid var(--line);
         border-radius: 16px;
         max-width: 100%;
         overflow-x: auto;
@@ -227,7 +327,7 @@
     }
 
     .data-table th {
-        color: var(--color-muted);
+        color: var(--muted);
         font-size: 12px;
         font-weight: 600;
         letter-spacing: 0.04em;
@@ -237,20 +337,20 @@
     }
 
     .data-table td {
-        border-bottom: 1px solid var(--color-line);
+        border-bottom: 1px solid var(--line);
         font-size: 14px;
         padding: 12px 16px;
         vertical-align: middle;
     }
 
     .data-table tbody tr:hover {
-        background: var(--color-hover);
+        background: var(--hover);
     }
 
     .nav-link {
         align-items: center;
         border-radius: 12px;
-        color: var(--color-muted);
+        color: var(--muted);
         display: flex;
         gap: 12px;
         min-height: 44px;
@@ -258,14 +358,14 @@
     }
 
     .nav-link:hover, .nav-link:active {
-        background: var(--color-hover);
-        color: #fff;
+        background: var(--hover);
+        color: var(--hover-ink);
     }
 
     .nav-link-active {
-        background: rgb(0 229 255 / 0.1);
-        box-shadow: inset 3px 0 0 var(--color-primary);
-        color: var(--color-primary);
+        background: var(--nav-active-bg);
+        box-shadow: inset 3px 0 0 var(--primary);
+        color: var(--primary);
         font-weight: 600;
     }
 
@@ -276,20 +376,20 @@
     }
 
     .alert-success {
-        background: rgb(50 215 75 / 0.12);
-        color: #32d74b;
+        background: var(--alert-success-bg);
+        color: var(--alert-success-ink);
     }
 
     .alert-error {
-        background: #3a1c1c;
-        border-left: 4px solid #ff453a;
-        color: #ff453a;
+        background: var(--alert-error-bg);
+        border-left: 4px solid var(--danger);
+        color: var(--alert-error-ink);
     }
 
     .alert-info {
-        background: rgb(0 229 255 / 0.1);
-        border-left: 4px solid #00e5ff;
-        color: #00e5ff;
+        background: var(--alert-info-bg);
+        border-left: 4px solid var(--primary);
+        color: var(--alert-info-ink);
     }
 
     .check {
@@ -300,20 +400,20 @@
     }
 
     .checkbox {
-        accent-color: var(--color-primary);
+        accent-color: var(--primary);
         height: 18px;
         width: 18px;
     }
 
     nav[aria-label="Pagination Navigation"] a,
     nav[aria-label="Pagination Navigation"] span {
-        background-color: #1e1e1e !important;
-        border-color: #2c2c2e !important;
-        color: #ffffff !important;
+        background-color: var(--page) !important;
+        border-color: var(--line) !important;
+        color: var(--page-ink) !important;
     }
 
     nav[aria-label="Pagination Navigation"] span[aria-current="page"] span {
-        background-color: #00e5ff !important;
-        color: #121212 !important;
+        background-color: var(--page-current) !important;
+        color: var(--page-current-ink) !important;
     }
 }

@@ -97,6 +97,9 @@
                     },
                 });
             }
+            if (window.paintCharts) {
+                window.paintCharts();
+            }
             });
         </script>
     @endpush
