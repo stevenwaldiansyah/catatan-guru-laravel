@@ -94,7 +94,7 @@ class TeachingJournalController extends Controller
         $journal = DB::transaction(function () use ($request, $payload) {
             $journal = TeachingJournal::query()->create($payload);
             $assignment = $this->assignmentFor($request);
-            if ($assignment->schoolClass->activeStudents()->isNotEmpty()) {
+            if ($request->has('attendance') && $assignment->schoolClass->activeStudents()->isNotEmpty()) {
                 $attendance = Request::create($request->url(), 'POST', [
                     'assignment_id' => $request->input('assignment_id'),
                     'date' => $request->input('date'),
