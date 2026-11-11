@@ -61,7 +61,7 @@ Pengujian memakai SQLite di memori dan tidak menyentuh database MySQL.
 - Jurnal mengajar dengan status draf dan selesai.
 - Absensi per sesi, pengisian massal, rekap, dan penolakan pencatatan ganda.
 - Catatan perkembangan siswa yang hanya terlihat oleh penulis dan admin.
-- Laporan jurnal, absensi, dan catatan dalam CSV serta PDF.
+- Laporan jurnal dan absensi dalam CSV serta PDF.
 - Dasbor admin dan guru membaca data database.
 
 ## Batasan

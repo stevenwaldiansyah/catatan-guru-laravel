@@ -1,5 +1,5 @@
 <x-app-layout>
-    <x-page-header title="Dasbor admin" description="Ringkasan data sekolah dari database, bukan angka contoh." />
+    <x-page-header title="Dasbor admin" />
     @if (! $settings?->active_semester_id)
         <div class="alert alert-info mb-[18px]" role="status">Tahun ajaran atau semester aktif belum diatur. Buka Pengaturan untuk memilihnya.</div>
     @endif
@@ -65,7 +65,7 @@
                     type: 'doughnut',
                     data: {
                         labels: ['Hadir', 'Izin', 'Sakit', 'Alpa'],
-                        datasets: [{ data: [attendance.hadir, attendance.izin, attendance.sakit, attendance.alpa], backgroundColor: ['#32D74B', '#FFD60A', '#00E5FF', '#FF453A'], borderWidth: 0 }]
+                        datasets: [{ data: [attendance.hadir, attendance.izin, attendance.sakit, attendance.alpa], backgroundColor: ['#16A34A', '#F59E0B', '#2563EB', '#DC2626'], borderWidth: 0 }]
                     },
                     options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#98989D', boxWidth: 10 } } } }
                 });
@@ -79,8 +79,8 @@
                         datasets: [{
                             label: 'Jurnal',
                             data: months.map((item) => item.total),
-                            borderColor: '#00E5FF',
-                            backgroundColor: 'rgba(48, 209, 88, 0.22)',
+                            borderColor: '#1749C8',
+                            backgroundColor: 'rgba(23, 73, 200, 0.12)',
                             fill: true,
                             tension: 0.35,
                             pointRadius: 0,

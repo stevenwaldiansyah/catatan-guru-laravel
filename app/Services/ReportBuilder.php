@@ -7,10 +7,11 @@ use App\Enums\EnrollmentStatus;
 use App\Models\AttendanceRecord;
 use App\Models\SchoolClass;
 use App\Models\Student;
-use App\Models\StudentNote;
+use App\Models\Teacher;
 use App\Models\TeachingJournal;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 
 class ReportBuilder
 {
@@ -22,7 +23,6 @@ class ReportBuilder
         return match ($type) {
             'jurnal' => $this->journals($user, $request),
             'absensi' => $this->attendance($user, $request),
-            'catatan' => $this->notes($user, $request),
             default => abort(404),
         };
     }
@@ -43,22 +43,40 @@ class ReportBuilder
             ->orderBy('date')
             ->get();
 
+        $rows = $journals->values()->map(function (TeachingJournal $journal, int $index) {
+            $session = trim((string) $journal->session_label);
+            $date = $this->longDate($journal->date);
+            $material = trim((string) $journal->material);
+            $activities = trim((string) $journal->activities);
+            if ($activities !== '') {
+                $material = trim($material."\n\nKegiatan:\n".$activities);
+            }
+            $notes = trim((string) $journal->notes);
+
+            return [
+                (string) ($index + 1),
+                $session !== '' ? $date."\n".$session : $date,
+                $journal->schoolClass->name,
+                trim($journal->subject->name."\n".$journal->teacher->name),
+                $material !== '' ? $material : '-',
+                $notes !== '' ? $notes : '-',
+            ];
+        })->all();
+
         return [
             'title' => 'Laporan Jurnal Mengajar',
+            'heading' => 'LAPORAN JURNAL KEGIATAN PEMBELAJARAN GURU',
             'period' => $this->period($request),
-            'columns' => ['Tanggal', 'Guru', 'Kelas', 'Mapel', 'Sesi', 'Materi', 'Kegiatan', 'Metode', 'Catatan', 'Status'],
-            'rows' => $journals->map(fn (TeachingJournal $journal) => [
-                $journal->date->translatedFormat('d M Y'),
-                $journal->teacher->name,
-                $journal->schoolClass->name,
-                $journal->subject->name,
-                $journal->session_label,
-                $journal->material,
-                (string) $journal->activities,
-                (string) $journal->method,
-                (string) $journal->notes,
-                $journal->status->label(),
-            ])->all(),
+            'meta' => [
+                ['Guru Pengampu', $this->teacherLabel($user, $request)],
+                ['Periode Tanggal', $this->period($request)],
+                ['Tanggal Cetak', $this->longDate(now())],
+                ['Total Jurnal', count($rows).' Catatan Kegiatan'],
+            ],
+            'columns' => ['No', 'Tanggal / Jam', 'Kelas', 'Mata Pelajaran', 'Materi & Kegiatan Pembelajaran', 'Kendala & Refleksi'],
+            'widths' => ['6%', '14%', '12%', '16%', '28%', '24%'],
+            'align' => ['center', 'left', 'left', 'left', 'left', 'left'],
+            'rows' => $rows,
         ];
     }
 
@@ -72,6 +90,7 @@ class ReportBuilder
 
         $students = Student::query()
             ->where('status', 'aktif')
+            ->with(['enrollments' => fn ($enrollment) => $enrollment->where('status', EnrollmentStatus::Active)->with('schoolClass')])
             ->when($classId, fn ($query) => $query->whereHas('enrollments', fn ($enrollment) => $enrollment->where('class_id', $classId)->where('status', EnrollmentStatus::Active)))
             ->when(! $classId && $user->isTeacher(), function ($query) use ($user) {
                 $ids = $user->teacher?->assignments()->pluck('class_id') ?? collect();
@@ -100,62 +119,104 @@ class ReportBuilder
             ->get()
             ->groupBy('student_id');
 
+        $rows = $students->values()->map(function (Student $student, int $index) use ($records, $classId) {
+            $items = $records->get($student->id, collect());
+            $present = $items->where('status', AttendanceStatus::Present)->count();
+            $permitted = $items->where('status', AttendanceStatus::Permitted)->count();
+            $sick = $items->where('status', AttendanceStatus::Sick)->count();
+            $absent = $items->where('status', AttendanceStatus::Absent)->count();
+
+            return [
+                (string) ($index + 1),
+                (string) $student->nis,
+                $student->name,
+                $this->classLabel($student, $classId),
+                (string) $present,
+                (string) $permitted,
+                (string) $sick,
+                (string) $absent,
+                $this->attendancePercent($present, $present + $permitted + $sick + $absent),
+            ];
+        })->all();
+
+        $className = $classId
+            ? (SchoolClass::query()->find($classId)?->name ?? 'Semua Kelas')
+            : 'Semua Kelas';
+
         return [
             'title' => 'Rekap Absensi Siswa',
+            'heading' => 'LAPORAN REKAP ABSENSI SISWA',
             'period' => $this->period($request),
-            'columns' => ['NIS', 'Nama', 'Hadir', 'Izin', 'Sakit', 'Alpa'],
-            'rows' => $students->map(function (Student $student) use ($records) {
-                $items = $records->get($student->id, collect());
-
-                return [
-                    (string) $student->nis,
-                    $student->name,
-                    (string) $items->where('status', AttendanceStatus::Present)->count(),
-                    (string) $items->where('status', AttendanceStatus::Permitted)->count(),
-                    (string) $items->where('status', AttendanceStatus::Sick)->count(),
-                    (string) $items->where('status', AttendanceStatus::Absent)->count(),
-                ];
-            })->all(),
+            'meta' => [
+                ['Kelas', $className],
+                ['Periode Tanggal', $this->period($request)],
+                ['Tanggal Cetak', $this->longDate(now())],
+                ['Total Siswa', count($rows).' Siswa'],
+            ],
+            'columns' => ['No', 'NIS', 'Nama', 'Kelas', 'Hadir', 'Izin', 'Sakit', 'Alpa', 'Kehadiran'],
+            'widths' => ['5%', '12%', '23%', '14%', '9%', '9%', '9%', '9%', '10%'],
+            'align' => ['center', 'left', 'left', 'left', 'center', 'center', 'center', 'center', 'center'],
+            'rows' => $rows,
         ];
     }
 
-    /**
-     * @return array{title:string, period:string, columns:list<string>, rows:list<list<string>>}
-     */
-    private function notes(User $user, Request $request): array
+    private function classLabel(Student $student, int $classId): string
     {
-        $notes = StudentNote::query()
-            ->visibleTo($user)
-            ->with(['teacher', 'student', 'schoolClass'])
-            ->when($request->filled('date_from'), fn ($query) => $query->whereDate('date', '>=', $request->date('date_from')))
-            ->when($request->filled('date_to'), fn ($query) => $query->whereDate('date', '<=', $request->date('date_to')))
-            ->when($request->filled('class_id'), fn ($query) => $query->where('class_id', $request->integer('class_id')))
-            ->when($request->filled('student_id'), fn ($query) => $query->where('student_id', $request->integer('student_id')))
-            ->orderBy('date')
-            ->get();
+        $names = $student->enrollments
+            ->filter(fn ($enrollment) => ! $classId || (int) $enrollment->class_id === $classId)
+            ->map(fn ($enrollment) => $enrollment->schoolClass?->name)
+            ->filter()
+            ->unique()
+            ->values();
 
-        return [
-            'title' => 'Laporan Catatan Perkembangan Siswa',
-            'period' => $this->period($request),
-            'columns' => ['Tanggal', 'Guru', 'Siswa', 'Kelas', 'Kategori', 'Deskripsi', 'Tindak lanjut'],
-            'rows' => $notes->map(fn (StudentNote $note) => [
-                $note->date->translatedFormat('d M Y'),
-                $note->teacher->name,
-                $note->student->name,
-                $note->schoolClass->name,
-                $note->categoryLabel(),
-                $note->description,
-                (string) $note->follow_up,
-            ])->all(),
-        ];
+        return $names->isEmpty() ? '-' : $names->implode(', ');
+    }
+
+    private function attendancePercent(int $present, int $total): string
+    {
+        if ($total === 0) {
+            return '0%';
+        }
+
+        $formatted = number_format($present / $total * 100, 1, ',', '.');
+        if (str_ends_with($formatted, ',0')) {
+            $formatted = substr($formatted, 0, -2);
+        }
+
+        return $formatted.'%';
+    }
+
+    private function teacherLabel(User $user, Request $request): string
+    {
+        if ($user->isTeacher()) {
+            return $user->teacher?->name ?: $user->name;
+        }
+
+        if ($request->filled('teacher_id')) {
+            $teacher = Teacher::query()->find($request->integer('teacher_id'));
+            if ($teacher) {
+                return $teacher->name;
+            }
+        }
+
+        return 'Semua Guru';
+    }
+
+    private function longDate(Carbon|\DateTimeInterface|string|null $value): string
+    {
+        if ($value === null || $value === '') {
+            return '-';
+        }
+
+        return str_replace(' ', "\u{00A0}", Carbon::parse($value)->locale('id')->translatedFormat('d F Y'));
     }
 
     private function period(Request $request): string
     {
-        $from = $request->string('date_from')->toString();
-        $to = $request->string('date_to')->toString();
+        $from = $request->filled('date_from') ? $this->longDate($request->date('date_from')) : null;
+        $to = $request->filled('date_to') ? $this->longDate($request->date('date_to')) : null;
         if ($from && $to) {
-            return $from.' s.d. '.$to;
+            return $from.' s/d '.$to;
         }
         if ($from) {
             return 'Mulai '.$from;

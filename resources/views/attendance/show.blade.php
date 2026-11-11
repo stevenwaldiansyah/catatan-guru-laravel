@@ -20,15 +20,16 @@
             <input type="hidden" name="date" value="{{ $session->date->toDateString() }}">
             <input type="hidden" name="session_label" value="{{ $session->session_label }}">
             @foreach ($session->records as $record)
+                @php $studentName = $record->student->name ?? 'Siswa tidak ditemukan'; @endphp
                 <div class="grid items-center gap-[12px] md:grid-cols-[1fr_180px_1fr]">
-                    <p>{{ $record->student->name }}</p>
-                    <label class="sr-only" for="status-{{ $record->student_id }}">Status {{ $record->student->name }}</label>
+                    <p>{{ $studentName }}@if ($record->student?->trashed()) <span class="text-[13px] text-muted">Siswa dihapus</span>@endif</p>
+                    <label class="sr-only" for="status-{{ $record->student_id }}">Status {{ $studentName }}</label>
                     <select id="status-{{ $record->student_id }}" class="field" name="status[{{ $record->student_id }}]" required>
                         @foreach (\App\Enums\AttendanceStatus::options() as $status)
                             <option value="{{ $status->value }}" @selected($record->status === $status)>{{ $status->label() }}</option>
                         @endforeach
                     </select>
-                    <input class="field" name="note[{{ $record->student_id }}]" value="{{ $record->note }}" placeholder="Keterangan" aria-label="Keterangan {{ $record->student->name }}">
+                    <input class="field" name="note[{{ $record->student_id }}]" value="{{ $record->note }}" placeholder="Keterangan" aria-label="Keterangan {{ $studentName }}">
                 </div>
             @endforeach
             <button class="btn btn-primary" data-submit>Simpan perubahan</button>

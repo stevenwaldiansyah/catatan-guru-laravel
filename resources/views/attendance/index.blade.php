@@ -17,13 +17,14 @@
                 <thead><tr><th>Tanggal</th><th>Kelas</th><th>Mapel</th><th>Sesi</th><th>Guru</th><th>Siswa</th></tr></thead>
                 <tbody>
                     @foreach ($sessions as $session)
-                        <tr>
-                            <td><a class="text-primary" href="{{ route('attendance.show', $session) }}">{{ $session->date->translatedFormat('d M Y') }}</a></td>
-                            <td>{{ $session->schoolClass->name }}</td>
-                            <td>{{ $session->subject->name }}</td>
-                            <td>{{ $session->session_label }}</td>
-                            <td>{{ $session->teacher->name }}</td>
-                            <td>{{ $session->records_count }}</td>
+                        @php($attendanceUrl = route('attendance.show', $session))
+                        <tr class="row-link">
+                            <td><a class="row-hit is-primary" href="{{ $attendanceUrl }}">{{ $session->date->translatedFormat('d M Y') }}</a></td>
+                            <td><a class="row-hit" href="{{ $attendanceUrl }}">{{ $session->schoolClass->name }}</a></td>
+                            <td><a class="row-hit" href="{{ $attendanceUrl }}">{{ $session->subject->name }}</a></td>
+                            <td><a class="row-hit" href="{{ $attendanceUrl }}">{{ $session->session_label }}</a></td>
+                            <td><a class="row-hit" href="{{ $attendanceUrl }}">{{ $session->teacher->name }}</a></td>
+                            <td><a class="row-hit" href="{{ $attendanceUrl }}">{{ $session->records_count }}</a></td>
                         </tr>
                     @endforeach
                 </tbody>

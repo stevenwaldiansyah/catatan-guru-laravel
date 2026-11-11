@@ -18,24 +18,13 @@ use Illuminate\View\View;
 
 class AttendanceController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request): RedirectResponse
     {
         $this->authorize('viewAny', AttendanceSession::class);
 
-        $sessions = AttendanceSession::query()
-            ->visibleTo($request->user())
-            ->with(['schoolClass', 'subject', 'teacher'])
-            ->withCount('records')
-            ->when($request->filled('date'), fn ($query) => $query->whereDate('date', $request->date('date')))
-            ->when($request->filled('class_id'), fn ($query) => $query->where('class_id', $request->integer('class_id')))
-            ->latest('date')
-            ->paginate(10)
-            ->withQueryString();
-
-        return view('attendance.index', [
-            'sessions' => $sessions,
-            'assignments' => app(TeachingAuthorizer::class)->assignments($request->user())->get(),
-        ]);
+        return redirect()->to(route('journals.index', array_filter([
+            'attendance_date' => $request->query('date'),
+        ])).'#absensi');
     }
 
     public function create(Request $request): View
@@ -93,7 +82,7 @@ class AttendanceController extends Controller
             $attendance->delete();
         });
 
-        return redirect()->route('attendance.index')->with('success', 'Sesi absensi dihapus.');
+        return redirect()->to(route('journals.index').'#absensi')->with('success', 'Sesi absensi dihapus.');
     }
 
     public function recap(Request $request): View
@@ -155,6 +144,11 @@ class AttendanceController extends Controller
             'classes' => $classes->get(),
             'assignments' => app(TeachingAuthorizer::class)->assignments($user)->get(),
         ]);
+    }
+
+    public function save(Request $request): AttendanceSession
+    {
+        return $this->persist($request);
     }
 
     private function persist(Request $request, ?AttendanceSession $session = null): AttendanceSession

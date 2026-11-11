@@ -13,9 +13,7 @@
         <p><x-badge :tone="$journal->status->value === 'completed' ? 'success' : 'warning'">{{ $journal->status->label() }}</x-badge></p>
         <p><span class="text-muted">Guru.</span> {{ $journal->teacher->name }}</p>
         <p><span class="text-muted">Materi.</span> {{ $journal->material }}</p>
-        <p><span class="text-muted">Kegiatan.</span> {{ $journal->activities ?: '-' }}</p>
-        <p><span class="text-muted">Metode.</span> {{ $journal->method ?: '-' }}</p>
-        <p><span class="text-muted">Kendala.</span> {{ $journal->notes ?: '-' }}</p>
+        <p><span class="text-muted">Catatan atau kendala.</span> {{ $journal->notes ?: '-' }}</p>
         <p class="text-[13px] text-muted">Diperbarui {{ $journal->updated_at->translatedFormat('d M Y H:i') }}</p>
         @if ($journal->attendanceSession)
             <a class="text-primary" href="{{ route('attendance.show', $journal->attendanceSession) }}">Lihat absensi sesi ini</a>

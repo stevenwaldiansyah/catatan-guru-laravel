@@ -56,14 +56,26 @@ class ReportController extends Controller
 
         return Pdf::loadView('reports.pdf', [
             'report' => $report,
-            'school' => $settings,
-            'printedAt' => now()->translatedFormat('d M Y H:i'),
-        ])->setPaper('a4', 'landscape')->download($type.'-'.now()->format('Ymd-His').'.pdf');
+            'schoolName' => $settings->school_name ?? 'EduJurnal',
+            'placeDate' => $this->placeDate($settings),
+        ])->setPaper('a4', 'portrait')->download($type.'-'.now()->format('Ymd-His').'.pdf');
+    }
+
+    private function placeDate(?SchoolSetting $settings): string
+    {
+        $date = now()->locale('id')->translatedFormat('d F Y');
+        $parts = array_values(array_filter(array_map(
+            trim(...),
+            explode(',', (string) $settings?->address)
+        )));
+        $city = count($parts) >= 2 ? $parts[count($parts) - 2] : ($parts[0] ?? '');
+
+        return $city !== '' ? $city.', '.$date : $date;
     }
 
     private function type(string $type): string
     {
-        abort_unless(in_array($type, ['jurnal', 'absensi', 'catatan'], true), 404);
+        abort_unless(in_array($type, ['jurnal', 'absensi'], true), 404);
 
         return $type;
     }

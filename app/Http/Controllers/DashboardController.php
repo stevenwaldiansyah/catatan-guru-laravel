@@ -3,12 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Enums\AttendanceStatus;
+use App\Enums\EnrollmentStatus;
 use App\Models\AttendanceRecord;
 use App\Models\AttendanceSession;
 use App\Models\Schedule;
 use App\Models\SchoolClass;
 use App\Models\Student;
-use App\Models\StudentNote;
 use App\Models\Subject;
 use App\Models\Teacher;
 use App\Models\TeachingJournal;
@@ -46,7 +46,7 @@ class DashboardController extends Controller
             $month = now()->startOfMonth()->subMonths($ago);
 
             return [
-                'label' => $month->translatedFormat('M yy'),
+                'label' => $month->translatedFormat('M Y'),
                 'total' => TeachingJournal::query()
                     ->whereBetween('date', [$month->toDateString(), $month->copy()->endOfMonth()->toDateString()])
                     ->count(),
@@ -88,7 +88,6 @@ class DashboardController extends Controller
                 'schedules' => collect(),
                 'classCount' => 0,
                 'journals' => collect(),
-                'noteCount' => 0,
             ];
         }
 
@@ -103,22 +102,53 @@ class DashboardController extends Controller
             ->orderBy('start_time')
             ->get();
 
+        $sessions = AttendanceSession::query()
+            ->whereDate('date', today())
+            ->get()
+            ->groupBy(fn (AttendanceSession $session) => $session->class_id.'-'.$session->subject_id);
+        $used = [];
+
         foreach ($schedules as $schedule) {
-            $schedule->setAttribute('attendance_done', AttendanceSession::query()
-                ->where('class_id', $schedule->assignment->class_id)
-                ->where('subject_id', $schedule->assignment->subject_id)
-                ->whereDate('date', today())
-                ->where('session_label', $schedule->sessionLabel())
-                ->exists());
+            $key = $schedule->assignment->class_id.'-'.$schedule->assignment->subject_id;
+            $pool = collect($sessions->get($key, []))->reject(fn (AttendanceSession $session) => in_array($session->id, $used, true));
+            $labels = array_values(array_filter([$schedule->sessionLabel(), $schedule->timeRange()]));
+            $match = $pool->first(fn (AttendanceSession $session) => in_array($session->session_label, $labels, true))
+                ?? $pool->first();
+
+            if ($match) {
+                $used[] = $match->id;
+            }
+
+            $schedule->setAttribute('attendance_done', $match !== null);
         }
+
+        $classIds = $teacher->assignments()
+            ->when($semesterId, fn ($query) => $query->where('semester_id', $semesterId))
+            ->pluck('class_id')
+            ->unique();
+        $hour = now()->hour;
+        $greeting = match (true) {
+            $hour < 11 => 'Selamat pagi',
+            $hour < 15 => 'Selamat siang',
+            $hour < 18 => 'Selamat sore',
+            default => 'Selamat malam',
+        };
 
         return [
             'missingProfile' => false,
             'settings' => $settings,
             'schedules' => $schedules,
-            'classCount' => $teacher->assignments()->when($semesterId, fn ($query) => $query->where('semester_id', $semesterId))->pluck('class_id')->unique()->count(),
+            'greeting' => $greeting,
+            'classCount' => $classIds->count(),
+            'studentCount' => Student::query()
+                ->where('status', 'aktif')
+                ->whereHas('enrollments', fn ($query) => $query->where('status', EnrollmentStatus::Active)->whereIn('class_id', $classIds))
+                ->count(),
+            'journalMonth' => TeachingJournal::query()
+                ->visibleTo($user)
+                ->whereBetween('date', [now()->startOfMonth()->toDateString(), now()->endOfMonth()->toDateString()])
+                ->count(),
             'journals' => TeachingJournal::query()->visibleTo($user)->with(['schoolClass', 'subject'])->latest('date')->limit(5)->get(),
-            'noteCount' => StudentNote::query()->visibleTo($user)->whereBetween('date', [now()->startOfMonth()->toDateString(), now()->endOfMonth()->toDateString()])->count(),
         ];
     }
 }

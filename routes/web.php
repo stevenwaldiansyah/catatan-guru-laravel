@@ -48,6 +48,7 @@ Route::middleware(['auth', 'active'])->group(function () {
 
     Route::resource('siswa', StudentController::class)->parameters(['siswa' => 'student'])->names('students');
     Route::resource('jadwal', ScheduleController::class)->parameters(['jadwal' => 'schedule'])->names('schedules')->except(['show']);
+    Route::get('/jurnal/siswa', [TeachingJournalController::class, 'students'])->name('journals.students');
     Route::resource('jurnal', TeachingJournalController::class)->parameters(['jurnal' => 'journal'])->names('journals');
 
     Route::get('/absensi/rekap', [AttendanceController::class, 'recap'])->name('attendance.recap');

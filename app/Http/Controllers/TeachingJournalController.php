@@ -3,15 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Enums\JournalStatus;
+use App\Models\AttendanceSession;
 use App\Models\Schedule;
 use App\Models\Semester;
 use App\Models\TeachingAssignment;
 use App\Models\TeachingJournal;
 use App\Services\TeachingAuthorizer;
 use App\Support\Search;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class TeachingJournalController extends Controller
@@ -19,6 +22,7 @@ class TeachingJournalController extends Controller
     public function index(Request $request): View
     {
         $this->authorize('viewAny', TeachingJournal::class);
+        $this->authorize('viewAny', AttendanceSession::class);
 
         $journals = TeachingJournal::query()
             ->visibleTo($request->user())
@@ -35,8 +39,18 @@ class TeachingJournalController extends Controller
             ->paginate(10)
             ->withQueryString();
 
+        $sessions = AttendanceSession::query()
+            ->visibleTo($request->user())
+            ->with(['schoolClass', 'subject', 'teacher'])
+            ->withCount('records')
+            ->when($request->filled('attendance_date'), fn ($query) => $query->whereDate('date', $request->date('attendance_date')))
+            ->latest('date')
+            ->paginate(10, ['*'], 'absensi')
+            ->withQueryString();
+
         return view('journals.index', [
             'journals' => $journals,
+            'sessions' => $sessions,
             'assignments' => app(TeachingAuthorizer::class)->assignments($request->user())->get(),
         ]);
     }
@@ -48,7 +62,7 @@ class TeachingJournalController extends Controller
         return view('journals.form', [
             'journal' => new TeachingJournal([
                 'date' => today(),
-                'status' => JournalStatus::Draft,
+                'status' => JournalStatus::Completed,
                 'session_label' => 'Sesi 1',
             ]),
             'assignments' => app(TeachingAuthorizer::class)->assignments($request->user())->get(),
@@ -56,12 +70,46 @@ class TeachingJournalController extends Controller
         ]);
     }
 
+    public function students(Request $request): JsonResponse
+    {
+        $this->authorize('create', TeachingJournal::class);
+        $assignment = $this->assignmentFor($request);
+
+        return response()->json([
+            'class_name' => $assignment->schoolClass->name,
+            'students' => $assignment->schoolClass->activeStudents()->map(fn ($student) => [
+                'id' => $student->id,
+                'name' => $student->name,
+                'nis' => $student->nis,
+            ])->values(),
+        ]);
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $this->authorize('create', TeachingJournal::class);
-        $journal = TeachingJournal::query()->create($this->payload($request));
+        $this->authorize('create', AttendanceSession::class);
+        $payload = $this->payload($request);
 
-        return redirect()->route('journals.show', $journal)->with('success', 'Jurnal tersimpan.');
+        $journal = DB::transaction(function () use ($request, $payload) {
+            $journal = TeachingJournal::query()->create($payload);
+            $assignment = $this->assignmentFor($request);
+            if ($assignment->schoolClass->activeStudents()->isNotEmpty()) {
+                $attendance = Request::create($request->url(), 'POST', [
+                    'assignment_id' => $request->input('assignment_id'),
+                    'date' => $request->input('date'),
+                    'session_label' => $request->input('session_label'),
+                    'journal_id' => $journal->id,
+                    'status' => $request->input('attendance', []),
+                ]);
+                $attendance->setUserResolver(fn () => $request->user());
+                app(AttendanceController::class)->save($attendance);
+            }
+
+            return $journal;
+        });
+
+        return redirect()->route('journals.show', $journal)->with('success', 'Jurnal dan absensi tersimpan.');
     }
 
     public function show(TeachingJournal $journal): View
@@ -104,6 +152,17 @@ class TeachingJournalController extends Controller
         return redirect()->route('journals.index')->with('success', 'Jurnal diarsipkan.');
     }
 
+    private function assignmentFor(Request $request): TeachingAssignment
+    {
+        $assignment = TeachingAssignment::query()->with('schoolClass')->findOrFail($request->integer('assignment_id'));
+        $user = $request->user();
+        if ($user->isTeacher() && $user->teacher?->id !== $assignment->teacher_id) {
+            abort(403);
+        }
+
+        return $assignment;
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -114,8 +173,6 @@ class TeachingJournalController extends Controller
             'date' => ['required', 'date'],
             'session_label' => ['required', 'string', 'max:50'],
             'material' => ['required', 'string', 'max:5000'],
-            'activities' => ['nullable', 'string', 'max:5000', 'required_if:status,completed'],
-            'method' => ['nullable', 'string', 'max:100'],
             'notes' => ['nullable', 'string', 'max:5000'],
             'status' => ['required', 'in:draft,completed'],
             'schedule_id' => ['nullable', 'exists:schedules,id'],
@@ -159,8 +216,6 @@ class TeachingJournalController extends Controller
             'date' => $data['date'],
             'session_label' => $data['session_label'],
             'material' => $data['material'],
-            'activities' => $data['activities'] ?? null,
-            'method' => $data['method'] ?? null,
             'notes' => $data['notes'] ?? null,
             'status' => $status,
             'completed_at' => $status === JournalStatus::Completed ? ($journal?->completed_at ?? now()) : null,

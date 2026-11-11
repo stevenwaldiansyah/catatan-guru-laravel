@@ -9,6 +9,7 @@ use App\Models\Subject;
 use App\Models\Teacher;
 use App\Models\TeachingAssignment;
 use App\Models\TeachingJournal;
+use App\Models\User;
 use App\Services\ScheduleConflictChecker;
 use App\Support\Days;
 use Illuminate\Http\RedirectResponse;
@@ -18,41 +19,68 @@ use Illuminate\View\View;
 
 class ScheduleController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request): View|RedirectResponse
     {
         $this->authorize('viewAny', Schedule::class);
 
-        $schedules = Schedule::query()
+        if ($request->user()->isAdmin() && ! $request->filled('guru')) {
+            return view('schedules.index', [
+                'selectedTeacher' => null,
+                'teachers' => Teacher::query()->orderBy('name')->withCount('assignments')->get(),
+                'scheduleCounts' => Schedule::query()
+                    ->join('teaching_assignments', 'teaching_assignments.id', '=', 'schedules.teaching_assignment_id')
+                    ->selectRaw('teaching_assignments.teacher_id as teacher_id, count(*) as total')
+                    ->groupBy('teaching_assignments.teacher_id')
+                    ->pluck('total', 'teacher_id'),
+                'days' => Days::options(),
+            ]);
+        }
+
+        $selectedTeacher = $request->user()->isAdmin()
+            ? Teacher::query()->find($request->integer('guru'))
+            : $request->user()->teacher;
+
+        if ($request->user()->isAdmin() && ! $selectedTeacher) {
+            return redirect()->route('schedules.index')->with('error', 'Guru tidak ditemukan.');
+        }
+
+        $assignments = $this->assignmentsFor($request->user()->isAdmin() ? null : $request->user())
+            ->when($selectedTeacher, fn ($items) => $items->where('teacher_id', $selectedTeacher->id))
+            ->values();
+
+        $week = Schedule::query()
             ->visibleTo($request->user())
-            ->with(['assignment.teacher', 'assignment.schoolClass', 'assignment.subject', 'assignment.semester'])
-            ->when($request->filled('day'), fn ($query) => $query->where('day_of_week', $request->integer('day')))
+            ->when($selectedTeacher, fn ($query) => $query->whereHas(
+                'assignment',
+                fn ($assignment) => $assignment->where('teacher_id', $selectedTeacher->id),
+            ))
+            ->with(['assignment.schoolClass', 'assignment.subject', 'assignment.semester'])
             ->orderBy('day_of_week')
             ->orderBy('start_time')
-            ->paginate(15)
-            ->withQueryString();
-
-        $assignments = TeachingAssignment::query()
-            ->when($request->user()->isTeacher(), fn ($query) => $query->where('teacher_id', $request->user()->teacher?->id ?? 0))
-            ->with(['teacher', 'schoolClass', 'subject', 'semester'])
-            ->orderBy('teacher_id')
-            ->get();
+            ->get()
+            ->groupBy('day_of_week');
 
         return view('schedules.index', [
-            'schedules' => $schedules,
+            'selectedTeacher' => $selectedTeacher,
             'assignments' => $assignments,
+            'week' => $week,
             'days' => Days::options(),
-            'teachers' => Teacher::query()->orderBy('name')->get(),
-            'classes' => SchoolClass::query()->with('academicYear')->orderBy('name')->get(),
-            'subjects' => Subject::query()->where('is_active', true)->orderBy('name')->get(),
-            'semesters' => Semester::query()->with('academicYear')->orderByDesc('id')->get(),
+            'classes' => $request->user()->isAdmin() ? SchoolClass::query()->with('academicYear')->orderBy('name')->get() : collect(),
+            'subjects' => $request->user()->isAdmin() ? Subject::query()->where('is_active', true)->orderBy('name')->get() : collect(),
+            'semesters' => $request->user()->isAdmin() ? Semester::query()->with('academicYear')->orderByDesc('id')->get() : collect(),
         ]);
     }
 
-    public function create(): View
+    public function create(Request $request): View|RedirectResponse
     {
         $this->authorize('create', Schedule::class);
 
-        return view('schedules.form', $this->formData(new Schedule));
+        $teacher = Teacher::query()->find($request->integer('guru'));
+        if (! $teacher) {
+            return redirect()->route('schedules.index')->with('error', 'Pilih guru terlebih dahulu.');
+        }
+
+        return view('schedules.form', $this->formData(new Schedule, $teacher));
     }
 
     public function store(Request $request, ScheduleConflictChecker $conflicts): RedirectResponse
@@ -67,14 +95,16 @@ class ScheduleController extends Controller
 
         Schedule::query()->create($data);
 
-        return redirect()->route('schedules.index')->with('success', 'Jadwal ditambahkan.');
+        return $this->backToTeacher($data['teaching_assignment_id'])->with('success', 'Jadwal ditambahkan.');
     }
 
     public function edit(Schedule $schedule): View
     {
         $this->authorize('update', $schedule);
 
-        return view('schedules.form', $this->formData($schedule));
+        $schedule->load('assignment.teacher');
+
+        return view('schedules.form', $this->formData($schedule, $schedule->assignment?->teacher));
     }
 
     public function update(Request $request, Schedule $schedule, ScheduleConflictChecker $conflicts): RedirectResponse
@@ -89,15 +119,18 @@ class ScheduleController extends Controller
 
         $schedule->update($data);
 
-        return redirect()->route('schedules.index')->with('success', 'Jadwal diperbarui.');
+        return $this->backToTeacher($data['teaching_assignment_id'])->with('success', 'Jadwal diperbarui.');
     }
 
     public function destroy(Schedule $schedule): RedirectResponse
     {
         $this->authorize('delete', $schedule);
+        $teacherId = $schedule->assignment?->teacher_id;
         $schedule->delete();
 
-        return redirect()->route('schedules.index')->with('success', 'Jadwal dihapus. Jurnal yang terkait tidak ikut terhapus.');
+        return redirect()
+            ->route('schedules.index', $teacherId ? ['guru' => $teacherId] : [])
+            ->with('success', 'Jadwal dihapus. Jurnal yang terkait tidak ikut terhapus.');
     }
 
     public function storeAssignment(Request $request): RedirectResponse
@@ -155,13 +188,40 @@ class ScheduleController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function formData(Schedule $schedule): array
+    private function formData(Schedule $schedule, ?Teacher $teacher = null): array
     {
+        $teacher ??= $schedule->assignment?->teacher;
+
         return [
             'schedule' => $schedule,
-            'assignments' => TeachingAssignment::query()->with(['teacher', 'schoolClass', 'subject', 'semester'])->get(),
+            'teacher' => $teacher,
+            'assignments' => $this->assignmentsFor()
+                ->when($teacher, fn ($items) => $items->where('teacher_id', $teacher->id))
+                ->values(),
             'days' => Days::options(),
         ];
+    }
+
+    private function backToTeacher(int $assignmentId): RedirectResponse
+    {
+        $teacherId = TeachingAssignment::query()->whereKey($assignmentId)->value('teacher_id');
+
+        return redirect()->route('schedules.index', $teacherId ? ['guru' => $teacherId] : []);
+    }
+
+    private function assignmentsFor(?User $user = null)
+    {
+        return TeachingAssignment::query()
+            ->when($user?->isTeacher(), fn ($query) => $query->where('teacher_id', $user->teacher?->id ?? 0))
+            ->with(['teacher', 'schoolClass', 'subject', 'semester'])
+            ->get()
+            ->sortBy(fn (TeachingAssignment $assignment) => mb_strtolower(implode(' ', [
+                $assignment->teacher?->name,
+                $assignment->schoolClass?->name,
+                $assignment->subject?->name,
+                $assignment->semester?->name,
+            ])), SORT_STRING)
+            ->values();
     }
 
     /**

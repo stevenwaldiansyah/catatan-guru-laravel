@@ -1,5 +1,5 @@
 <x-app-layout>
-    <x-page-header title="Kelas" description="Kelas terikat pada tahun ajaran agar riwayat tidak tertimpa.">
+    <x-page-header title="Data kelas" description="Daftar kelas, wali kelas, dan jumlah siswa aktif.">
         <x-slot:actions><a class="btn btn-primary" href="{{ route('classes.create') }}">Tambah kelas</a></x-slot:actions>
     </x-page-header>
     @if ($classes->isEmpty())

@@ -24,7 +24,7 @@
                 <thead><tr>@foreach ($report['columns'] as $column)<th>{{ $column }}</th>@endforeach</tr></thead>
                 <tbody>
                     @foreach ($report['rows'] as $row)
-                        <tr>@foreach ($row as $cell)<td>{{ $cell }}</td>@endforeach</tr>
+                        <tr>@foreach ($row as $cell)<td style="white-space: pre-line; vertical-align: top;">{{ $cell }}</td>@endforeach</tr>
                     @endforeach
                 </tbody>
             </table>

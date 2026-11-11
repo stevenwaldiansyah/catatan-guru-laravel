@@ -47,8 +47,8 @@ function themeValue(name, fallback) {
 function paintCharts() {
     const text = themeValue('--muted', '#98989D');
     const grid = themeValue('--line', '#2C2C2E');
-    const primary = themeValue('--primary', '#00E5FF');
-    const mint = themeValue('--mint', '#32D74B');
+    const primary = themeValue('--primary', '#1749C8');
+    const mint = themeValue('--mint', '#16A34A');
 
     Chart.defaults.color = text;
     Chart.defaults.borderColor = grid;
@@ -90,7 +90,7 @@ function applyTheme(theme) {
 
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) {
-        meta.setAttribute('content', next === 'light' ? '#f4f4f5' : '#121212');
+        meta.setAttribute('content', next === 'light' ? '#F5F8FF' : '#0F172A');
     }
 
     document.querySelectorAll('[data-theme-toggle]').forEach((button) => {
@@ -162,5 +162,12 @@ document.addEventListener('submit', (event) => {
     }
 
     button.disabled = true;
-    button.textContent = 'Memproses...';
+    button.setAttribute('aria-busy', 'true');
+    button.classList.add('is-loading');
+    const label = button.querySelector('[data-submit-label]');
+    if (label) {
+        label.textContent = 'Memproses...';
+    } else {
+        button.textContent = 'Memproses...';
+    }
 });
