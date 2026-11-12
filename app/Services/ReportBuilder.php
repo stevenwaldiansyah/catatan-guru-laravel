@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\AttendanceStatus;
 use App\Enums\EnrollmentStatus;
 use App\Models\AttendanceRecord;
+use App\Models\AttendanceSession;
 use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Models\Teacher;
@@ -156,6 +157,57 @@ class ReportBuilder
             'columns' => ['No', 'NIS', 'Nama', 'Kelas', 'Hadir', 'Izin', 'Sakit', 'Alpa', 'Kehadiran'],
             'widths' => ['5%', '12%', '23%', '14%', '9%', '9%', '9%', '9%', '10%'],
             'align' => ['center', 'left', 'left', 'left', 'center', 'center', 'center', 'center', 'center'],
+            'rows' => $rows,
+        ];
+    }
+
+    /**
+     * @return array{title:string, heading:string, period:string, meta:list<array{0:string,1:string}>, columns:list<string>, widths:list<string>, align:list<string>, rows:list<list<string>>}
+     */
+    public function teacherAttendanceHistory(Teacher $teacher, Request $request): array
+    {
+        $sessions = AttendanceSession::query()
+            ->where('teacher_id', $teacher->id)
+            ->with(['schoolClass', 'subject'])
+            ->withCount([
+                'records as hadir_count' => fn ($query) => $query->where('status', AttendanceStatus::Present),
+                'records as izin_count' => fn ($query) => $query->where('status', AttendanceStatus::Permitted),
+                'records as sakit_count' => fn ($query) => $query->where('status', AttendanceStatus::Sick),
+                'records as alpa_count' => fn ($query) => $query->where('status', AttendanceStatus::Absent),
+            ])
+            ->when($request->filled('date_from'), fn ($query) => $query->whereDate('date', '>=', $request->date('date_from')))
+            ->when($request->filled('date_to'), fn ($query) => $query->whereDate('date', '<=', $request->date('date_to')))
+            ->orderBy('date')
+            ->orderBy('id')
+            ->get();
+
+        $rows = $sessions->values()->map(function (AttendanceSession $session, int $index) {
+            return [
+                (string) ($index + 1),
+                $this->longDate($session->date),
+                $session->session_label,
+                $session->schoolClass->name,
+                $session->subject->name,
+                (string) $session->hadir_count,
+                (string) $session->izin_count,
+                (string) $session->sakit_count,
+                (string) $session->alpa_count,
+            ];
+        })->all();
+
+        return [
+            'title' => 'Riwayat Absensi '.$teacher->name,
+            'heading' => 'RIWAYAT ABSENSI GURU',
+            'period' => $this->period($request),
+            'meta' => [
+                ['Guru', $teacher->name],
+                ['Periode Tanggal', $this->period($request)],
+                ['Tanggal Cetak', $this->longDate(now())],
+                ['Total Sesi', count($rows).' Sesi'],
+            ],
+            'columns' => ['No', 'Tanggal', 'Sesi', 'Kelas', 'Mata Pelajaran', 'Hadir', 'Izin', 'Sakit', 'Alpa'],
+            'widths' => ['6%', '16%', '10%', '14%', '18%', '9%', '9%', '9%', '9%'],
+            'align' => ['center', 'left', 'left', 'left', 'left', 'center', 'center', 'center', 'center'],
             'rows' => $rows,
         ];
     }

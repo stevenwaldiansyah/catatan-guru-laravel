@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\SchoolSetting;
+use App\Models\Teacher;
 use App\Services\ReportBuilder;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -15,7 +16,11 @@ class ReportController extends Controller
 
     public function index(Request $request): View
     {
-        return view('reports.index');
+        return view('reports.index', [
+            'teachers' => $request->user()->isAdmin()
+                ? Teacher::query()->withCount(['journals', 'sessions'])->orderBy('name')->get()
+                : collect(),
+        ]);
     }
 
     public function show(Request $request, string $type): View

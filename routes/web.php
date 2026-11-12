@@ -13,6 +13,7 @@ use App\Http\Controllers\StudentController;
 use App\Http\Controllers\StudentNoteController;
 use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\TeacherController;
+use App\Http\Controllers\TeacherRecordController;
 use App\Http\Controllers\TeachingJournalController;
 use Illuminate\Support\Facades\Route;
 
@@ -40,6 +41,12 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::resource('kelas', SchoolClassController::class)->parameters(['kelas' => 'schoolClass'])->names('classes');
         Route::resource('mata-pelajaran', SubjectController::class)->parameters(['mata-pelajaran' => 'subject'])->names('subjects')->except(['show']);
         Route::resource('tahun-ajaran', AcademicYearController::class)->parameters(['tahun-ajaran' => 'academicYear'])->names('academic-years')->except(['show']);
+        Route::get('/laporan/guru/{teacher}', [TeacherRecordController::class, 'show'])->name('reports.teacher');
+        Route::get('/laporan/guru/{teacher}/jurnal.csv', [TeacherRecordController::class, 'journalsCsv'])->name('reports.teacher.journals.csv');
+        Route::get('/laporan/guru/{teacher}/jurnal.pdf', [TeacherRecordController::class, 'journalsPdf'])->name('reports.teacher.journals.pdf');
+        Route::get('/laporan/guru/{teacher}/absensi.csv', [TeacherRecordController::class, 'attendanceCsv'])->name('reports.teacher.attendance.csv');
+        Route::get('/laporan/guru/{teacher}/absensi.pdf', [TeacherRecordController::class, 'attendancePdf'])->name('reports.teacher.attendance.pdf');
+        Route::redirect('/catatan-absensi', '/laporan');
         Route::get('/pengaturan', [SchoolSettingController::class, 'edit'])->name('settings.edit');
         Route::put('/pengaturan', [SchoolSettingController::class, 'update'])->name('settings.update');
         Route::post('/penugasan', [ScheduleController::class, 'storeAssignment'])->name('assignments.store');

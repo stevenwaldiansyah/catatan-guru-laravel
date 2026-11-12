@@ -360,4 +360,51 @@ class SchoolWorkflowTest extends TestCase
             ->assertSee($student->name)
             ->assertSee('Siswa dihapus');
     }
+
+    public function test_admin_can_review_and_export_a_teachers_records(): void
+    {
+        $school = $this->buildSchool();
+
+        TeachingJournal::query()->create([
+            'teacher_id' => $school['teacher']->id,
+            'class_id' => $school['class']->id,
+            'subject_id' => $school['subject']->id,
+            'academic_year_id' => $school['year']->id,
+            'semester_id' => $school['semester']->id,
+            'date' => '2026-11-11',
+            'session_label' => 'Sesi 1',
+            'material' => 'Persamaan linear',
+            'status' => JournalStatus::Completed,
+        ]);
+
+        $this->actingAs($school['teacherUser'])
+            ->get(route('reports.index'))
+            ->assertOk()
+            ->assertDontSee('Catatan dan Absensi');
+
+        $this->actingAs($school['teacherUser'])
+            ->get(route('reports.teacher', $school['teacher']))
+            ->assertForbidden();
+
+        $this->actingAs($school['admin'])
+            ->get(route('reports.index'))
+            ->assertOk()
+            ->assertSee('Laporan')
+            ->assertSee('Catatan dan Absensi')
+            ->assertSee($school['teacher']->name)
+            ->assertDontSee('>Riwayat<', false);
+
+        $this->actingAs($school['admin'])
+            ->get(route('reports.teacher', $school['teacher']))
+            ->assertOk()
+            ->assertSee('Matematika')
+            ->assertSee('Sesi 1')
+            ->assertSee('PDF')
+            ->assertSee('CSV');
+
+        $this->actingAs($school['admin'])
+            ->get(route('reports.teacher.journals.csv', $school['teacher']))
+            ->assertOk()
+            ->assertHeader('content-type', 'text/csv; charset=UTF-8');
+    }
 }

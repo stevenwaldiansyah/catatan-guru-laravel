@@ -34,6 +34,11 @@ class Teacher extends Model
         return $this->hasMany(TeachingJournal::class);
     }
 
+    public function sessions(): HasMany
+    {
+        return $this->hasMany(AttendanceSession::class);
+    }
+
     public function homeroomClasses(): HasMany
     {
         return $this->hasMany(SchoolClass::class, 'homeroom_teacher_id');

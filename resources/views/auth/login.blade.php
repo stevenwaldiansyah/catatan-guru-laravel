@@ -4,6 +4,7 @@
     @endphp
     <div class="login-orb login-orb-a" aria-hidden="true"></div>
     <div class="login-orb login-orb-b" aria-hidden="true"></div>
+    <div class="login-orb login-orb-c" aria-hidden="true"></div>
     <div class="login-toggle">
         @include('partials.theme-toggle')
     </div>
@@ -11,7 +12,7 @@
     <div class="login-shell">
         <section class="login-brand" aria-label="Tentang EduJurnal">
             <div class="login-in" style="animation-delay: 40ms">
-                <img src="{{ asset('logo-edujurnal.png') }}" alt="EduJurnal" class="h-16 w-16 rounded-2xl">
+                <img src="{{ asset('logo-edujurnal.png') }}" alt="EduJurnal" class="login-logo h-16 w-16 rounded-2xl">
                 <p class="mt-4 text-[13px] font-semibold uppercase tracking-[0.14em] text-primary">EduJurnal</p>
             </div>
             <div class="login-lead">
@@ -48,19 +49,19 @@
 
         <main id="isi" class="login-panel">
             <div class="login-card login-in" style="animation-delay: 80ms">
-                <img src="{{ asset('logo-edujurnal.png') }}" alt="" class="mx-auto h-14 w-14 rounded-2xl">
+                <img src="{{ asset('logo-edujurnal.png') }}" alt="" class="login-logo mx-auto h-14 w-14 rounded-2xl">
                 <p class="mt-3 text-center text-[12px] font-semibold uppercase tracking-[0.14em] text-primary">EduJurnal</p>
                 <h2 class="login-in mt-3 text-center font-headline text-[28px] font-semibold leading-9" style="animation-delay: 160ms">Selamat Datang Kembali</h2>
                 <p class="login-in mx-auto mt-2 max-w-[36ch] text-center text-[14px] leading-6 text-muted" style="animation-delay: 220ms">Masuk untuk melanjutkan aktivitas administrasi pembelajaran.</p>
 
                 @if (session('success'))
-                    <div class="alert alert-success login-in mt-5" role="status" style="animation-delay: 240ms">{{ session('success') }}</div>
+                    <div class="alert alert-success login-note mt-5" data-autodismiss role="status">{{ session('success') }}</div>
                 @endif
 
                 <form method="POST" action="{{ route('login.store') }}" class="mt-6 grid gap-4">
                     @csrf
                     @if ($errors->any())
-                        <div class="alert alert-error" role="alert">{{ $errors->first() }}</div>
+                        <div class="alert alert-error login-note" role="alert">{{ $errors->first() }}</div>
                     @endif
                     <label class="login-in block" style="animation-delay: 260ms" for="login">
                         <span class="label">Email atau nama pengguna</span>
@@ -80,8 +81,8 @@
                                 <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
                                 <input id="password" name="password" type="password" :type="show ? 'text' : 'password'" autocomplete="current-password" required class="field login-input pr-12{{ $errors->has('password') ? ' field-invalid' : '' }}" @if($errors->has('password')) aria-invalid="true" aria-describedby="password-error" @endif>
                                 <button type="button" class="login-eye" @click="show = !show" :aria-label="show ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'" :aria-pressed="show">
-                                    <svg x-show="!show" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.5"/></svg>
-                                    <svg x-show="show" x-cloak viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.5 6.2A10 10 0 0 1 12 6c6.5 0 10 6 10 6a17 17 0 0 1-3.2 3.8"/><path d="M6.1 6.1C3.6 7.8 2 12 2 12s3.5 6 10 6c1.3 0 2.5-.2 3.6-.6"/><path d="M9.9 9.9a2.5 2.5 0 0 0 3.2 3.2"/></svg>
+                                    <svg x-show="!show" x-transition.opacity.duration.150ms viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.5"/></svg>
+                                    <svg x-show="show" x-cloak x-transition.opacity.duration.150ms viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.5 6.2A10 10 0 0 1 12 6c6.5 0 10 6 10 6a17 17 0 0 1-3.2 3.8"/><path d="M6.1 6.1C3.6 7.8 2 12 2 12s3.5 6 10 6c1.3 0 2.5-.2 3.6-.6"/><path d="M9.9 9.9a2.5 2.5 0 0 0 3.2 3.2"/></svg>
                                 </button>
                             </span>
                         </label>
@@ -114,7 +115,20 @@
     @push('scripts')
         <script>
             (function () {
-                if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                document.querySelectorAll('[data-autodismiss]').forEach(function (notice) {
+                    window.setTimeout(function () {
+                        if (reduceMotion) {
+                            notice.remove();
+                            return;
+                        }
+                        notice.classList.add('is-leaving');
+                        notice.addEventListener('animationend', function () {
+                            notice.remove();
+                        }, { once: true });
+                    }, 4200);
+                });
+                if (reduceMotion) {
                     return;
                 }
                 const stage = document.querySelector('[data-login-stage]');

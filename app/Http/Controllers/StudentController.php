@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Enums\EnrollmentStatus;
 use App\Models\SchoolClass;
 use App\Models\Student;
-use App\Models\StudentNote;
 use App\Services\EnrollmentService;
 use App\Support\Search;
 use Illuminate\Http\RedirectResponse;
@@ -72,13 +71,12 @@ class StudentController extends Controller
         return redirect()->route('students.show', $student)->with('success', 'Siswa ditambahkan.');
     }
 
-    public function show(Request $request, Student $student): View
+    public function show(Student $student): View
     {
         $this->authorize('view', $student);
         $student->load(['enrollments.schoolClass', 'enrollments.academicYear']);
-        $notes = StudentNote::query()->visibleTo($request->user())->where('student_id', $student->id)->latest('date')->limit(10)->get();
 
-        return view('students.show', compact('student', 'notes'));
+        return view('students.show', compact('student'));
     }
 
     public function edit(Student $student): View
